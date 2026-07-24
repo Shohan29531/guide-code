@@ -282,70 +282,10 @@ st.markdown(
     .gc-vis-stage {
         box-sizing: border-box;
         max-width: 100%;
-        min-width: 0;
-        overflow: visible;
-        padding: .45rem .1rem .65rem;
+        overflow: hidden;
+        padding: .2rem 0;
         width: 100%;
     }
-    .gc-vis-legend {
-        align-items: center;
-        color: #526071;
-        display: flex;
-        flex-wrap: wrap;
-        font-size: .66rem;
-        gap: .3rem .75rem;
-        line-height: 1.2;
-        margin-top: .42rem;
-    }
-    .gc-vis-legend-item {
-        align-items: center;
-        display: inline-flex;
-        gap: .28rem;
-    }
-    .gc-vis-legend-item i {
-        background: #e7efff;
-        border: 1px solid #4c7dd9;
-        border-radius: 50%;
-        box-sizing: border-box;
-        display: inline-block;
-        height: .62rem;
-        width: .62rem;
-    }
-    .gc-vis-legend-item i.target {
-        background: #fff1e7;
-        border-color: #e99554;
-    }
-    .gc-vis-legend-item i.badge {
-        background: #2f6fed;
-        border: 2px solid #dbe8ff;
-    }
-    .gc-vis-legend-item i.next {
-        background: transparent;
-        border: 0;
-        border-radius: 0;
-        border-top: 2px dashed #b57616;
-        height: 0;
-        width: .85rem;
-    }
-    .gc-vis-legend-item i.path {
-        background: #e7efff;
-        border-color: #4c7dd9;
-        border-radius: 3px;
-    }
-    .gc-vis-legend-item i.match {
-        background: #e8f7ee;
-        border-color: #55a977;
-        border-radius: 3px;
-    }
-    .gc-vis-legend-item i.result {
-        background: #fff1e7;
-        border-color: #e99554;
-        border-radius: 3px;
-    }
-    .gc-vis-legend-item i.tone-1 { background: #e8f0ff; border-color: #6f94d8; }
-    .gc-vis-legend-item i.tone-2 { background: #e8f7ee; border-color: #69ad82; }
-    .gc-vis-legend-item i.tone-3 { background: #fff1e7; border-color: #dc8c50; }
-    .gc-vis-legend-item i.tone-4 { background: #f2eaff; border-color: #9a82ca; }
     .gc-problem-visual figcaption {
         color: #526071;
         font-size: .78rem;
@@ -362,14 +302,10 @@ st.markdown(
         display: flex;
         gap: .24rem;
         max-width: 100%;
-        overflow-x: auto;
-        overflow-y: visible;
-        padding: .06rem .04rem .36rem;
-        scrollbar-gutter: stable;
     }
     .gc-vis-cell-wrap {
-        flex: 1 0 var(--gc-vis-cell-width, 2.15rem);
-        min-width: var(--gc-vis-cell-width, 2.15rem);
+        flex: 1 1 2rem;
+        min-width: 0;
         position: relative;
         text-align: center;
     }
@@ -435,15 +371,15 @@ st.markdown(
         background: #fff3e8;
         border-color: #efbc8f;
     }
-    .gc-vis-cell-wrap.has-break-after {
+    .gc-vis-cell.has-break {
         margin-right: .7rem;
     }
-    .gc-vis-cell-wrap.has-break-after::after {
+    .gc-vis-cell.has-break::after {
         border-right: 2px dashed #98a2b3;
         bottom: -.05rem;
         content: "";
         position: absolute;
-        right: -.42rem;
+        right: -.5rem;
         top: -.05rem;
     }
     .gc-vis-bars {
@@ -526,22 +462,16 @@ st.markdown(
         transform: translateX(-50%);
         white-space: nowrap;
     }
-    .gc-vis-grid-scroll {
-        max-width: 100%;
-        overflow-x: auto;
-        overflow-y: hidden;
-        padding: .08rem .05rem .35rem;
-        scrollbar-gutter: stable;
-    }
     .gc-vis-grid {
         display: grid;
         gap: .22rem;
-        grid-template-columns: repeat(var(--gc-grid-columns), var(--gc-grid-cell-width));
-        max-width: none;
-        width: max-content;
+        grid-template-columns: repeat(var(--gc-grid-columns), minmax(0, 2.35rem));
+        max-width: 100%;
+        width: min(100%, calc(var(--gc-grid-columns) * 2.57rem));
     }
     .gc-vis-grid-cell {
         align-items: center;
+        aspect-ratio: 1;
         background: #f3f5f8;
         border: 1px solid #d8dee8;
         border-radius: 4px;
@@ -550,13 +480,11 @@ st.markdown(
         font-family: SFMono-Regular, Consolas, monospace;
         font-size: .76rem;
         font-weight: 700;
-        height: var(--gc-grid-cell-height);
         justify-content: center;
         min-width: 0;
-        overflow: visible;
-        padding: 0 .2rem;
+        overflow: hidden;
         position: relative;
-        text-overflow: clip;
+        text-overflow: ellipsis;
     }
     .gc-vis-grid-cell small {
         color: #345995;
@@ -851,61 +779,45 @@ st.markdown(
         line-height: .6;
         margin-left: 3.7rem;
     }
-    .gc-vis-graph-block {
-        max-width: 100%;
-        min-width: 0;
-    }
-    .gc-vis-graph-scroll {
-        max-width: 100%;
-        overflow-x: auto;
-        overflow-y: hidden;
-        padding: .45rem .5rem 1.55rem;
-        scrollbar-gutter: stable;
-    }
     .gc-vis-graph {
+        aspect-ratio: 2 / 1;
         box-sizing: border-box;
-        height: var(--gc-graph-height);
-        margin: 0 auto;
-        min-width: var(--gc-graph-width);
+        max-width: 25rem;
         position: relative;
-        width: var(--gc-graph-width);
-    }
-    .gc-vis-graph-svg {
-        height: 100%;
-        inset: 0;
-        overflow: visible;
-        position: absolute;
         width: 100%;
-        z-index: 1;
     }
     .gc-vis-graph-edge {
-        fill: none;
-        stroke: #aeb8c6;
-        stroke-linecap: round;
-        stroke-width: 2;
-        vector-effect: non-scaling-stroke;
+        background: #aeb8c6;
+        height: 2px;
+        position: absolute;
+        transform-origin: left center;
+        z-index: 1;
     }
     .gc-vis-graph-edge.is-active {
-        stroke: #2f6fed;
-        stroke-width: 3;
+        background: #2f6fed;
+        height: 3px;
     }
-    .gc-vis-graph-edge.tone-1 { stroke: #6f94d8; }
-    .gc-vis-graph-edge.tone-2 { stroke: #69ad82; }
-    .gc-vis-graph-edge.tone-3 { stroke: #dc8c50; }
-    .gc-vis-graph-edge.tone-4 { stroke: #9a82ca; }
-    .gc-vis-graph-arrow { fill: #7f8b9c; }
-    .gc-vis-graph-arrow-active { fill: #2f6fed; }
+    .gc-vis-graph-edge.is-directed::after {
+        border-bottom: 4px solid transparent;
+        border-left: 7px solid #7f8b9c;
+        border-top: 4px solid transparent;
+        content: "";
+        position: absolute;
+        right: 0;
+        top: -3px;
+    }
     .gc-vis-graph-edge-label {
         background: #fff;
         border: 1px solid #d8dee8;
         border-radius: 3px;
         color: #344054;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .6rem;
+        font-size: .58rem;
+        left: 50%;
         line-height: 1;
-        padding: .13rem .22rem;
+        padding: .12rem .2rem;
         position: absolute;
-        transform: translate(-50%, -50%);
+        top: 50%;
         white-space: nowrap;
         z-index: 3;
     }
@@ -914,44 +826,17 @@ st.markdown(
         background: #f3f5f8;
         border: 1px solid #aeb8c6;
         border-radius: 50%;
-        box-sizing: border-box;
         color: #344054;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
         font-size: .75rem;
         font-weight: 700;
-        height: 1.88rem;
+        height: 1.75rem;
         justify-content: center;
         position: absolute;
         transform: translate(-50%, -50%);
-        width: 1.88rem;
+        width: 1.75rem;
         z-index: 2;
-    }
-    .gc-vis-graph-node.is-active {
-        background: #e7efff;
-        border-color: #2f6fed;
-        box-shadow: 0 0 0 2px rgba(47, 111, 237, .12);
-        color: #173b78;
-    }
-    .gc-vis-graph-node.tone-1 {
-        background: #e8f0ff;
-        border-color: #6f94d8;
-        color: #244b89;
-    }
-    .gc-vis-graph-node.tone-2 {
-        background: #e8f7ee;
-        border-color: #69ad82;
-        color: #17613a;
-    }
-    .gc-vis-graph-node.tone-3 {
-        background: #fff1e7;
-        border-color: #dc8c50;
-        color: #873800;
-    }
-    .gc-vis-graph-node.tone-4 {
-        background: #f2eaff;
-        border-color: #9a82ca;
-        color: #553b86;
     }
     .gc-vis-graph-node.is-active {
         background: #e7efff;
@@ -962,16 +847,12 @@ st.markdown(
         font: inherit;
     }
     .gc-vis-graph-node small {
-        background: rgba(255, 255, 255, .94);
-        border-radius: 3px;
         color: #526071;
-        font-size: .58rem;
-        font-weight: 650;
+        font-size: .57rem;
+        font-weight: 600;
         left: 50%;
-        line-height: 1.15;
-        padding: .08rem .18rem;
         position: absolute;
-        top: 1.95rem;
+        top: 1.82rem;
         transform: translateX(-50%);
         white-space: nowrap;
     }
@@ -1208,49 +1089,29 @@ st.markdown(
         font-size: .7rem;
         padding-top: .3rem;
     }
-    .gc-vis-tree-block {
-        max-width: 100%;
-        min-width: 0;
-    }
-    .gc-vis-tree-scroll {
-        max-width: 100%;
-        overflow-x: auto;
-        overflow-y: hidden;
-        padding: .55rem .5rem .75rem;
-        scrollbar-gutter: stable;
-    }
     .gc-vis-tree {
-        margin: 0 auto;
+        max-width: 32rem;
+        min-height: 92px;
         position: relative;
-    }
-    .gc-vis-tree-svg {
-        height: 100%;
-        inset: 0;
-        overflow: visible;
-        position: absolute;
         width: 100%;
-        z-index: 1;
     }
     .gc-vis-tree-edge {
-        fill: none;
-        stroke: #b9c2cf;
-        stroke-linecap: round;
-        stroke-width: 2;
-        vector-effect: non-scaling-stroke;
-    }
-    .gc-vis-tree-edge.is-active {
-        stroke: #2f6fed;
-        stroke-width: 3;
+        background: #b9c2cf;
+        height: 2px;
+        position: absolute;
+        transform-origin: left center;
+        z-index: 1;
     }
     .gc-vis-tree-next-link {
-        fill: none;
-        stroke: #b57616;
-        stroke-dasharray: 5 4;
-        stroke-width: 1.5;
-        vector-effect: non-scaling-stroke;
-    }
-    #gc-vis-tree-next-arrow path {
-        fill: #b57616;
+        border-top: 1px dashed #c58b2b;
+        color: #9a6700;
+        font-size: .85rem;
+        font-weight: 800;
+        height: 1px;
+        line-height: 0;
+        position: absolute;
+        text-align: right;
+        z-index: 1;
     }
     .gc-vis-list-loop {
         color: #667085;
@@ -1264,23 +1125,21 @@ st.markdown(
         background: #f3f5f8;
         border: 1px solid #aeb8c6;
         border-radius: 50%;
-        box-sizing: border-box;
         color: #344054;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
         font-size: .72rem;
         font-weight: 700;
-        height: 1.9rem;
+        height: 1.75rem;
         justify-content: center;
         position: absolute;
         transform: translate(-50%, -50%);
-        width: 1.9rem;
+        width: 1.75rem;
         z-index: 2;
     }
     .gc-vis-tree-node.is-active {
         background: #e7efff;
-        border-color: #2f6fed;
-        box-shadow: 0 0 0 2px rgba(47, 111, 237, .12);
+        border-color: #4c7dd9;
         color: #173b78;
     }
     .gc-vis-tree-node.is-target {
@@ -1299,18 +1158,18 @@ st.markdown(
         color: #fff;
         display: flex;
         font-size: .5rem;
-        height: .9rem;
+        height: .85rem;
         justify-content: center;
         position: absolute;
-        right: -.42rem;
-        top: -.44rem;
-        width: .9rem;
+        right: -.38rem;
+        top: -.4rem;
+        width: .85rem;
     }
     .gc-vis-tree-collection {
         align-items: start;
-        display: grid;
-        gap: .9rem;
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+        display: flex;
+        flex-wrap: wrap;
+        gap: .65rem;
         max-width: 100%;
     }
     .gc-vis-tree-list {
@@ -1324,14 +1183,11 @@ st.markdown(
         min-width: 0;
     }
     .gc-vis-tree-panel {
+        flex: 1 1 14rem;
         min-width: 0;
-        width: 100%;
     }
-    .gc-vis-tree-panel .gc-vis-tree-scroll {
-        border: 1px solid #edf0f4;
-        border-radius: 6px;
-        padding-left: .35rem;
-        padding-right: .35rem;
+    .gc-vis-tree-panel .gc-vis-tree {
+        max-width: 22rem;
     }
     .gc-vis-empty {
         color: #667085;
@@ -1408,16 +1264,9 @@ st.markdown(
         background: #f3f5f8;
         border: 1px solid #e0e5ec;
     }
-    .gc-vis-dp-block {
-        max-width: 100%;
-        min-width: 0;
-    }
     .gc-vis-dp-table-wrap {
         max-width: 100%;
-        overflow-x: auto;
-        overflow-y: visible;
-        padding: .15rem .1rem .5rem;
-        scrollbar-gutter: stable;
+        overflow: hidden;
     }
     .gc-vis-dp-table {
         border-collapse: separate;
@@ -1436,38 +1285,19 @@ st.markdown(
         text-align: center;
     }
     .gc-vis-dp-table th {
-        background: #fff;
         color: #526071;
         font-weight: 700;
-    }
-    .gc-vis-dp-table tbody th {
-        left: 0;
-        position: sticky;
-        z-index: 2;
     }
     .gc-vis-dp-table td {
         background: #f3f5f8;
         border: 1px solid #e0e5ec;
         color: #344054;
     }
-    .gc-vis-dp-table td.is-path {
+    .gc-vis-dp-table td.is-active {
         background: #e7efff;
         border-color: #4c7dd9;
         color: #173b78;
-        font-weight: 750;
-    }
-    .gc-vis-dp-table td.is-match {
-        background: #e8f7ee;
-        border-color: #55a977;
-        color: #135f35;
         font-weight: 800;
-    }
-    .gc-vis-dp-table td.is-result {
-        background: #fff1e7;
-        border-color: #e99554;
-        box-shadow: inset 0 0 0 1px #e99554;
-        color: #873800;
-        font-weight: 850;
     }
     .gc-vis-pyramid {
         display: grid;
@@ -3934,10 +3764,29 @@ def render_code_workspace(
     language = LANGUAGE_BY_ID[language_id]
     state_suffix = f"{username}::{problem['id']}::{language_id}"
     draft_key = f"code::{state_suffix}"
+    generated_starter = starter_code(problem, language_id)
     if draft_key not in st.session_state:
+        saved_draft = load_draft(username, problem["id"], language_id)
+        is_legacy_default = bool(
+            saved_draft
+            and (
+                (
+                    language_id == "python"
+                    and saved_draft.strip() == str(problem["starter_code"]).strip()
+                )
+                or (
+                    language_id == "javascript"
+                    and re.fullmatch(
+                        r"\s*function\s+solve\([^)]*\)\s*\{\s*"
+                        r"//\s*Write your solution here\s*\}\s*",
+                        saved_draft,
+                    )
+                    is not None
+                )
+            )
+        )
         st.session_state[draft_key] = (
-            load_draft(username, problem["id"], language_id)
-            or starter_code(problem, language_id)
+            generated_starter if is_legacy_default else (saved_draft or generated_starter)
         )
 
     editor_response = code_editor(
@@ -4078,6 +3927,7 @@ def render_code_workspace(
                 code,
                 [problem["tests"][selected_case]],
                 language=language_id,
+                problem=problem,
             )
         st.session_state[result_key] = {
             "kind": "run",
@@ -4089,7 +3939,12 @@ def render_code_workspace(
     if submit_clicked:
         save_draft(username, problem["id"], code, language_id)
         with st.spinner("Submitting..."):
-            result = run_tests(code, problem["tests"], language=language_id)
+            result = run_tests(
+                code,
+                problem["tests"],
+                language=language_id,
+                problem=problem,
+            )
         mistake_type, _ = classify_mistake(result, code)
         notes = load_guide_notes(username, problem["id"])
         planning_steps = sum(
