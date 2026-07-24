@@ -218,6 +218,23 @@ def _classes(*parts: str | None) -> str:
     return " ".join(part for part in parts if part)
 
 
+def _edge_key(start: Any, end: Any, directed: bool = False) -> tuple[Any, Any]:
+    if directed:
+        return (start, end)
+    return tuple(sorted((start, end), key=lambda value: (type(value).__name__, str(value))))
+
+
+def _legend(items: list[tuple[str, str]] | None) -> str:
+    if not items:
+        return ""
+    rendered = "".join(
+        f'<span class="gc-vis-legend-item"><i class="{escape(tone)}"></i>'
+        f'{escape(label)}</span>'
+        for tone, label in items
+    )
+    return f'<div class="gc-vis-legend">{rendered}</div>'
+
+
 def _sequence(spec: dict[str, Any]) -> str:
     active = set(spec.get("active", []))
     warning = set(spec.get("warning", []))
@@ -240,8 +257,11 @@ def _sequence(spec: dict[str, Any]) -> str:
             "has-break" if index == break_after else None,
         )
         annotation = annotations.get(index)
+        content_length = max(len(str(value)), len(str(annotation)) if annotation else 0)
+        cell_width = max(2.15, min(11.5, content_length * 0.52 + 0.8))
         cells.append(
-            f'<div class="gc-vis-cell-wrap">'
+            f'<div class="{_classes("gc-vis-cell-wrap", "has-break-after" if index == break_after else None)}" '
+            f'style="--gc-vis-cell-width:{cell_width:.2f}rem">'
             f'<div class="{class_name}">{escape(str(value))}</div>'
             f'{f"<span>{escape(str(annotation))}</span>" if annotation else ""}'
             f"</div>"
@@ -289,6 +309,24 @@ def _grid_cells(
 ) -> str:
     classes = classes or {}
     columns = max((len(row) for row in values), default=1)
+    longest_value = max(
+        (
+            len(str("" if value is None else value))
+            for row in values
+            for value in row
+        ),
+        default=1,
+    )
+    cell_width = (
+        2.35
+        if longest_value <= 2
+        else 3.0
+        if longest_value <= 4
+        else 4.1
+        if longest_value <= 7
+        else 5.8
+    )
+    cell_height = cell_width if longest_value <= 4 else 2.8
     flat_cells = []
     flat_index = 0
     for row_index, row in enumerate(values):
@@ -311,8 +349,10 @@ def _grid_cells(
             )
             flat_index += 1
     return (
-        f'<div class="gc-vis-grid" style="--gc-grid-columns:{columns}">'
-        f'{"".join(flat_cells)}</div>'
+        '<div class="gc-vis-grid-scroll">'
+        f'<div class="gc-vis-grid" style="--gc-grid-columns:{columns};'
+        f'--gc-grid-cell-width:{cell_width}rem;--gc-grid-cell-height:{cell_height}rem">'
+        f'{"".join(flat_cells)}</div></div>'
     )
 
 
@@ -477,48 +517,100 @@ def _intervals(spec: dict[str, Any]) -> str:
 
 def _graph(spec: dict[str, Any]) -> str:
     nodes = spec["nodes"]
-    active_edges = {tuple(edge[:2]) for edge in spec.get("active_edges", [])}
+    directed = bool(spec.get("directed"))
+    active_edges = {
+        _edge_key(edge[0], edge[1], directed)
+        for edge in spec.get("active_edges", [])
+        if len(edge) >= 2
+    }
     active_nodes = set(spec.get("active_nodes", []))
     node_annotations = spec.get("node_annotations", {})
-    directed = bool(spec.get("directed"))
-    edges = []
-    for edge in spec["edges"]:
+    node_tones = spec.get("node_tones", {})
+    edge_tones = spec.get("edge_tones", {})
+    canvas_width = max(320, int(spec.get("canvas_width", 420)))
+    canvas_height = max(190, int(spec.get("canvas_height", 220)))
+
+    edge_html: list[str] = []
+    edge_labels: list[str] = []
+    for edge_index, edge in enumerate(spec["edges"]):
         start, end = edge[:2]
         edge_label = edge[2] if len(edge) > 2 else None
         x1, y1 = nodes[start]
         x2, y2 = nodes[end]
-        dx = x2 - x1
-        # The graph canvas is twice as wide as it is tall, so vertical
-        # percentages represent half as many pixels as horizontal percentages.
-        dy = (y2 - y1) * .5
-        length = hypot(dx, dy)
-        angle = atan2(dy, dx) * 180 / 3.141592653589793
-        if directed:
-            length = max(1, length - 4.5)
+        dx_px = (x2 - x1) / 100 * canvas_width
+        dy_px = (y2 - y1) / 100 * canvas_height
+        distance_px = max(1.0, hypot(dx_px, dy_px))
+        start_offset = 14 / distance_px
+        end_offset = (19 if directed else 14) / distance_px
+        sx = x1 + (x2 - x1) * start_offset
+        sy = y1 + (y2 - y1) * start_offset
+        ex = x2 - (x2 - x1) * end_offset
+        ey = y2 - (y2 - y1) * end_offset
+        key = _edge_key(start, end, directed)
+        is_active = key in active_edges
+        tone = edge_tones.get(key, edge_tones.get(edge_index))
         class_name = _classes(
             "gc-vis-graph-edge",
-            "is-active"
-            if (start, end) in active_edges
-            or (not directed and (end, start) in active_edges)
-            else None,
-            "is-directed" if directed else None,
+            "is-active" if is_active else None,
+            f"tone-{tone}" if tone else None,
         )
-        edges.append(
-            f'<div class="{class_name}" style="left:{x1}%;top:{y1}%;'
-            f'width:{length:.2f}%;transform:rotate({angle:.2f}deg)">'
-            f'{f"""<span class="gc-vis-graph-edge-label" style="transform:translate(-50%,-50%) rotate({-angle:.2f}deg)">{escape(str(edge_label))}</span>""" if edge_label is not None else ""}'
-            "</div>"
+        marker = (
+            ' marker-end="url(#gc-vis-graph-arrow-active)"'
+            if directed and is_active
+            else ' marker-end="url(#gc-vis-graph-arrow)"'
+            if directed
+            else ""
         )
+        edge_html.append(
+            f'<line class="{class_name}" x1="{sx:.2f}" y1="{sy:.2f}" '
+            f'x2="{ex:.2f}" y2="{ey:.2f}"{marker}></line>'
+        )
+        if edge_label is not None:
+            midpoint_x = (sx + ex) / 2
+            midpoint_y = (sy + ey) / 2
+            edge_labels.append(
+                '<span class="gc-vis-graph-edge-label" '
+                f'style="left:{midpoint_x:.2f}%;top:{midpoint_y:.2f}%">'
+                f'{escape(str(edge_label))}</span>'
+            )
+
     node_html = []
     for node, (x, y) in nodes.items():
         annotation = node_annotations.get(node)
+        tone = node_tones.get(node)
+        class_name = _classes(
+            "gc-vis-graph-node",
+            "is-active" if node in active_nodes else None,
+            f"tone-{tone}" if tone else None,
+        )
         node_html.append(
-            f'<div class="gc-vis-graph-node {"is-active" if node in active_nodes else ""}" '
-            f'style="left:{x}%;top:{y}%"><b>{escape(str(node))}</b>'
+            f'<div class="{class_name}" style="left:{x}%;top:{y}%"><b>'
+            f'{escape(str(node))}</b>'
             f'{f"<small>{escape(str(annotation))}</small>" if annotation is not None else ""}'
             "</div>"
         )
-    return f'<div class="gc-vis-graph">{"".join(edges)}{"".join(node_html)}</div>'
+
+    svg = (
+        '<svg class="gc-vis-graph-svg" viewBox="0 0 100 100" '
+        'preserveAspectRatio="none" aria-hidden="true">'
+        '<defs>'
+        '<marker id="gc-vis-graph-arrow" markerWidth="4.5" markerHeight="4.5" '
+        'refX="4.2" refY="2.25" orient="auto" markerUnits="strokeWidth">'
+        '<path class="gc-vis-graph-arrow" d="M0,0 L4.5,2.25 L0,4.5 Z"></path></marker>'
+        '<marker id="gc-vis-graph-arrow-active" markerWidth="4.5" markerHeight="4.5" '
+        'refX="4.2" refY="2.25" orient="auto" markerUnits="strokeWidth">'
+        '<path class="gc-vis-graph-arrow-active" d="M0,0 L4.5,2.25 L0,4.5 Z"></path></marker>'
+        '</defs>'
+        f'{"".join(edge_html)}</svg>'
+    )
+    legend = _legend(spec.get("legend"))
+    return (
+        '<div class="gc-vis-graph-block">'
+        '<div class="gc-vis-graph-scroll">'
+        f'<div class="gc-vis-graph" style="--gc-graph-width:{canvas_width}px;'
+        f'--gc-graph-height:{canvas_height}px">'
+        f'{svg}{"".join(edge_labels)}{"".join(node_html)}</div></div>{legend}</div>'
+    )
 
 
 def _houses(spec: dict[str, Any]) -> str:
@@ -777,6 +869,54 @@ def _tree_path_between(
     ]
 
 
+def _path_edges(path: list[int]) -> list[tuple[int, int]]:
+    return [
+        (path[index], path[index + 1])
+        for index in range(len(path) - 1)
+    ]
+
+
+def _tree_index_for_value(
+    nodes: list[dict[str, Any]],
+    value: Any,
+    excluded: set[int] | None = None,
+) -> int | None:
+    excluded = excluded or set()
+    return next(
+        (
+            index
+            for index, node in enumerate(nodes)
+            if index not in excluded and node["value"] == value
+        ),
+        None,
+    )
+
+
+def _tree_edges_between_result_and_targets(
+    values: list[Any],
+    result_value: Any,
+    target_values: list[Any],
+) -> tuple[list[int], list[int], list[tuple[int, int]]]:
+    nodes = _parse_tree_nodes(values)
+    result_index = _tree_index_for_value(nodes, result_value)
+    if result_index is None:
+        return [], [], []
+    used: set[int] = set()
+    target_indices: list[int] = []
+    edge_set: set[tuple[int, int]] = set()
+    active_indices = {result_index}
+    for value in target_values:
+        target_index = _tree_index_for_value(nodes, value, used)
+        if target_index is None:
+            continue
+        used.add(target_index)
+        target_indices.append(target_index)
+        path = _tree_path_between(nodes, result_index, target_index)
+        active_indices.update(path)
+        edge_set.update(_edge_key(*edge) for edge in _path_edges(path))
+    return sorted(active_indices), target_indices, sorted(edge_set)
+
+
 def _tree_depth_path(values: list[Any], shortest: bool = False) -> list[int]:
     nodes = _parse_tree_nodes(values)
     parent_indexes = {
@@ -924,15 +1064,24 @@ def _tree(spec: dict[str, Any]) -> str:
         return '<div class="gc-vis-empty">empty tree</div>'
 
     max_depth = max(node["depth"] for node in nodes)
+    level_capacity = 2**max_depth
+    canvas_width = max(300, min(980, 84 + level_capacity * 48))
+    level_gap = 62
+    canvas_height = max(150, 58 + max_depth * level_gap + 34)
     positions: dict[int, tuple[float, float]] = {}
     for index, node in enumerate(nodes):
         depth = node["depth"]
         first_slot = 2**depth - 1
         position_in_level = node["slot"] - first_slot
-        x = 4 + (position_in_level + .5) / (2**depth) * 92
-        y = 10 + depth / max(1, max_depth) * 72
+        x = 42 + (position_in_level + .5) / (2**depth) * (canvas_width - 84)
+        y = 30 + depth * level_gap
         positions[index] = (x, y)
 
+    active_edges = {
+        _edge_key(edge[0], edge[1])
+        for edge in spec.get("active_edges", [])
+        if len(edge) >= 2
+    }
     edge_html = []
     for child, node in enumerate(nodes):
         parent = node["parent"]
@@ -940,14 +1089,18 @@ def _tree(spec: dict[str, Any]) -> str:
             continue
         x1, y1 = positions[parent]
         x2, y2 = positions[child]
-        dx = x2 - x1
-        dy = (y2 - y1) * .55
-        length = hypot(dx, dy)
-        angle = atan2(dy, dx) * 180 / 3.141592653589793
+        distance = max(1.0, hypot(x2 - x1, y2 - y1))
+        offset = 15 / distance
+        sx = x1 + (x2 - x1) * offset
+        sy = y1 + (y2 - y1) * offset
+        ex = x2 - (x2 - x1) * offset
+        ey = y2 - (y2 - y1) * offset
         edge_html.append(
-            f'<span class="gc-vis-tree-edge" style="left:{x1:.2f}%;top:{y1:.2f}%;'
-            f'width:{length:.2f}%;transform:rotate({angle:.2f}deg)"></span>'
+            f'<line class="{_classes("gc-vis-tree-edge", "is-active" if _edge_key(parent, child) in active_edges else None)}" '
+            f'x1="{sx:.2f}" y1="{sy:.2f}" x2="{ex:.2f}" y2="{ey:.2f}"></line>'
         )
+
+    next_link_html = []
     if spec.get("next_links"):
         for depth in range(max_depth + 1):
             level = sorted(
@@ -960,11 +1113,12 @@ def _tree(spec: dict[str, Any]) -> str:
             for first, second in zip(level, level[1:]):
                 x1, y1 = positions[first]
                 x2, _ = positions[second]
-                edge_html.append(
-                    '<span class="gc-vis-tree-next-link" '
-                    f'style="left:{x1 + 2:.2f}%;top:{y1:.2f}%;'
-                    f'width:{max(0, x2 - x1 - 4):.2f}%">→</span>'
+                next_link_html.append(
+                    f'<line class="gc-vis-tree-next-link" x1="{x1 + 17:.2f}" '
+                    f'y1="{y1:.2f}" x2="{x2 - 18:.2f}" y2="{y1:.2f}" '
+                    'marker-end="url(#gc-vis-tree-next-arrow)"></line>'
                 )
+
     active_values = set(spec.get("active_values", []))
     target_values = set(spec.get("target_values", []))
     active_indices = set(spec.get("active_indices", []))
@@ -982,17 +1136,27 @@ def _tree(spec: dict[str, Any]) -> str:
             else None,
         )
         badge = badges.get(index)
+        x, y = positions[index]
         node_html.append(
-            f'<span class="{class_name}" '
-            f'style="left:{positions[index][0]:.2f}%;top:{positions[index][1]:.2f}%">'
+            f'<span class="{class_name}" style="left:{x:.2f}px;top:{y:.2f}px">'
             f'{escape(str(node["value"]))}'
             f'{f"<small>{escape(str(badge))}</small>" if badge is not None else ""}'
             "</span>"
         )
-    height = 92 + max_depth * 30
+
+    svg = (
+        f'<svg class="gc-vis-tree-svg" viewBox="0 0 {canvas_width} {canvas_height}" '
+        'preserveAspectRatio="none" aria-hidden="true"><defs>'
+        '<marker id="gc-vis-tree-next-arrow" markerWidth="8" markerHeight="8" '
+        'refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse">'
+        '<path d="M0,0 L8,4 L0,8 Z"></path></marker></defs>'
+        f'{"".join(edge_html)}{"".join(next_link_html)}</svg>'
+    )
+    legend = _legend(spec.get("legend"))
     return (
-        f'<div class="gc-vis-tree" style="height:{height}px">'
-        f'{"".join(edge_html)}{"".join(node_html)}</div>'
+        '<div class="gc-vis-tree-block"><div class="gc-vis-tree-scroll">'
+        f'<div class="gc-vis-tree" style="width:{canvas_width}px;height:{canvas_height}px">'
+        f'{svg}{"".join(node_html)}</div></div>{legend}</div>'
     )
 
 
@@ -1031,6 +1195,243 @@ def _tree_list_compare(spec: dict[str, Any]) -> str:
         f"{output_row}</div>"
         "</div>"
     )
+
+
+def _graph_components(
+    labels: list[Any],
+    edges: list[tuple[Any, Any]],
+) -> list[list[Any]]:
+    adjacency = {label: [] for label in labels}
+    for start, end in edges:
+        if start in adjacency and end in adjacency:
+            adjacency[start].append(end)
+            adjacency[end].append(start)
+    components: list[list[Any]] = []
+    unseen = set(labels)
+    while unseen:
+        root = next(iter(unseen))
+        stack = [root]
+        unseen.remove(root)
+        component = []
+        while stack:
+            node = stack.pop()
+            component.append(node)
+            for neighbor in adjacency[node]:
+                if neighbor in unseen:
+                    unseen.remove(neighbor)
+                    stack.append(neighbor)
+        components.append(component)
+    return components
+
+
+def _graph_bfs_path(
+    edges: list[tuple[Any, Any]],
+    start: Any,
+    end: Any,
+    directed: bool = False,
+) -> tuple[list[Any], list[tuple[Any, Any]]]:
+    adjacency: dict[Any, list[Any]] = {}
+    for first, second in edges:
+        adjacency.setdefault(first, []).append(second)
+        if not directed:
+            adjacency.setdefault(second, []).append(first)
+    queue = deque([start])
+    parent: dict[Any, Any | None] = {start: None}
+    while queue:
+        node = queue.popleft()
+        if node == end:
+            break
+        for neighbor in adjacency.get(node, []):
+            if neighbor not in parent:
+                parent[neighbor] = node
+                queue.append(neighbor)
+    if end not in parent:
+        return [], []
+    nodes = [end]
+    while parent[nodes[-1]] is not None:
+        nodes.append(parent[nodes[-1]])
+    nodes.reverse()
+    return nodes, [(nodes[index], nodes[index + 1]) for index in range(len(nodes) - 1)]
+
+
+def _graph_shortest_path_tree(
+    edges: list[tuple[Any, ...]],
+    source: Any,
+) -> tuple[list[Any], list[tuple[Any, Any]]]:
+    adjacency: dict[Any, list[tuple[Any, float]]] = {}
+    for edge in edges:
+        start, end = edge[:2]
+        weight = float(edge[2]) if len(edge) > 2 else 1.0
+        adjacency.setdefault(start, []).append((end, weight))
+    distances = {source: 0.0}
+    parent: dict[Any, Any] = {}
+    queue: list[tuple[float, str, Any]] = [(0.0, str(source), source)]
+    while queue:
+        distance, _, node = heappop(queue)
+        if distance != distances.get(node):
+            continue
+        for neighbor, weight in adjacency.get(node, []):
+            candidate = distance + weight
+            if candidate < distances.get(neighbor, float("inf")):
+                distances[neighbor] = candidate
+                parent[neighbor] = node
+                heappush(queue, (candidate, str(neighbor), neighbor))
+    active_nodes = list(distances)
+    active_edges = [(parent[node], node) for node in parent]
+    return active_nodes, active_edges
+
+
+def _bounded_cheapest_route(
+    edges: list[tuple[Any, ...]],
+    source: Any,
+    destination: Any,
+    max_edges: int,
+) -> tuple[list[Any], list[tuple[Any, Any]]]:
+    states: list[dict[Any, tuple[float, list[Any]]]] = [
+        {source: (0.0, [source])}
+    ]
+    best: tuple[float, list[Any]] | None = None
+    for _ in range(max_edges):
+        previous = states[-1]
+        current = dict(previous)
+        for edge in edges:
+            start, end = edge[:2]
+            weight = float(edge[2]) if len(edge) > 2 else 1.0
+            if start not in previous:
+                continue
+            candidate = previous[start][0] + weight
+            if end not in current or candidate < current[end][0]:
+                current[end] = (candidate, [*previous[start][1], end])
+        states.append(current)
+        if destination in current and (
+            best is None or current[destination][0] < best[0]
+        ):
+            best = current[destination]
+    if best is None:
+        return [], []
+    path = best[1]
+    return path, [(path[index], path[index + 1]) for index in range(len(path) - 1)]
+
+
+def _maximum_quality_route(
+    values: list[int | float],
+    edges: list[tuple[Any, ...]],
+    max_time: int | float,
+) -> tuple[list[Any], list[tuple[Any, Any]]]:
+    adjacency: dict[Any, list[tuple[Any, float]]] = {}
+    for edge in edges:
+        start, end = edge[:2]
+        weight = float(edge[2]) if len(edge) > 2 else 1.0
+        adjacency.setdefault(start, []).append((end, weight))
+        adjacency.setdefault(end, []).append((start, weight))
+
+    best_score = values[0] if values else 0
+    best_path: list[Any] = [0]
+    visits = {0: 1}
+    explored = 0
+
+    def visit(node: Any, elapsed: float, score: float, path: list[Any]) -> None:
+        nonlocal best_score, best_path, explored
+        explored += 1
+        if explored > 50_000:
+            return
+        if node == 0 and (score > best_score or (score == best_score and len(path) < len(best_path))):
+            best_score = score
+            best_path = path.copy()
+        for neighbor, weight in adjacency.get(node, []):
+            if elapsed + weight > max_time:
+                continue
+            first_visit = visits.get(neighbor, 0) == 0
+            visits[neighbor] = visits.get(neighbor, 0) + 1
+            added = values[neighbor] if first_visit and 0 <= neighbor < len(values) else 0
+            path.append(neighbor)
+            visit(neighbor, elapsed + weight, score + added, path)
+            path.pop()
+            visits[neighbor] -= 1
+
+    if values:
+        visit(0, 0.0, float(values[0]), [0])
+    return best_path, [
+        (best_path[index], best_path[index + 1])
+        for index in range(len(best_path) - 1)
+    ]
+
+
+def _dijkstra_details(
+    edges: list[tuple[Any, ...]],
+    source: Any,
+    reverse: bool = False,
+) -> tuple[dict[Any, float], dict[Any, Any]]:
+    adjacency: dict[Any, list[tuple[Any, float]]] = {}
+    for edge in edges:
+        start, end = edge[:2]
+        if reverse:
+            start, end = end, start
+        weight = float(edge[2]) if len(edge) > 2 else 1.0
+        adjacency.setdefault(start, []).append((end, weight))
+    distances = {source: 0.0}
+    parent: dict[Any, Any] = {}
+    queue: list[tuple[float, str, Any]] = [(0.0, str(source), source)]
+    while queue:
+        distance, _, node = heappop(queue)
+        if distance != distances.get(node):
+            continue
+        for neighbor, weight in adjacency.get(node, []):
+            candidate = distance + weight
+            if candidate < distances.get(neighbor, float("inf")):
+                distances[neighbor] = candidate
+                parent[neighbor] = node
+                heappush(queue, (candidate, str(neighbor), neighbor))
+    return distances, parent
+
+
+def _minimum_weighted_subgraph_route(
+    edges: list[tuple[Any, ...]],
+    source_one: Any,
+    source_two: Any,
+    destination: Any,
+) -> tuple[list[Any], list[tuple[Any, Any]], Any | None]:
+    first_distances, first_parent = _dijkstra_details(edges, source_one)
+    second_distances, second_parent = _dijkstra_details(edges, source_two)
+    reverse_distances, next_to_destination = _dijkstra_details(
+        edges, destination, reverse=True
+    )
+    candidates = set(first_distances) & set(second_distances) & set(reverse_distances)
+    if not candidates:
+        return [], [], None
+    meeting = min(
+        candidates,
+        key=lambda node: (
+            first_distances[node] + second_distances[node] + reverse_distances[node],
+            str(node),
+        ),
+    )
+
+    def source_path(source: Any, parent: dict[Any, Any]) -> list[Any]:
+        path = [meeting]
+        while path[-1] != source:
+            if path[-1] not in parent:
+                return []
+            path.append(parent[path[-1]])
+        path.reverse()
+        return path
+
+    first_path = source_path(source_one, first_parent)
+    second_path = source_path(source_two, second_parent)
+    tail = [meeting]
+    while tail[-1] != destination:
+        if tail[-1] not in next_to_destination:
+            return [], [], None
+        tail.append(next_to_destination[tail[-1]])
+
+    active_nodes = list(dict.fromkeys([*first_path, *second_path, *tail]))
+    active_edges = []
+    for path in (first_path, second_path, tail):
+        active_edges.extend(
+            (path[index], path[index + 1])
+            for index in range(len(path) - 1)
+        )
+    return active_nodes, list(dict.fromkeys(active_edges)), meeting
 
 
 def _graph_auto(spec: dict[str, Any]) -> str:
@@ -1156,14 +1557,57 @@ def _graph_auto(spec: dict[str, Any]) -> str:
                 50 + 39 * cos(angle),
                 50 + 36 * sin(angle),
             )
+
+    active_edges = list(spec.get("active_edges", []))
+    active_nodes = list(spec.get("active_nodes", []))
+    for edge in active_edges:
+        if len(edge) >= 2:
+            active_nodes.extend(edge[:2])
+    active_nodes = list(dict.fromkeys(active_nodes))
+
+    node_tones = dict(spec.get("node_tones", {}))
+    edge_tones = dict(spec.get("edge_tones", {}))
+    legend = list(spec.get("legend", []))
+    components = _graph_components(labels, pair_edges) if labels else []
+    if not directed and len(components) > 1 and not node_tones:
+        for component_index, component in enumerate(components, start=1):
+            tone = (component_index - 1) % 4 + 1
+            for node in component:
+                node_tones[node] = tone
+        for edge_index, (start, _) in enumerate(pair_edges):
+            edge_tones[edge_index] = node_tones.get(start)
+        legend.extend(
+            (f"tone-{(index - 1) % 4 + 1}", f"component {index}")
+            for index in range(1, len(components) + 1)
+        )
+
+    if is_tree:
+        level_counts: dict[int, int] = {}
+        for depth in depths.values():
+            level_counts[depth] = level_counts.get(depth, 0) + 1
+        widest_level = max(level_counts.values(), default=1)
+        canvas_width = max(360, min(760, widest_level * 78 + 90))
+        canvas_height = max(210, max(depths.values(), default=0) * 68 + 120)
+    elif directed and nodes:
+        canvas_width = max(390, min(760, len(labels) * 58 + 100))
+        canvas_height = 230
+    else:
+        canvas_width = max(390, min(760, len(labels) * 48 + 130))
+        canvas_height = max(220, min(320, len(labels) * 14 + 185))
+
     return _graph(
         {
             "nodes": nodes,
             "edges": edges,
             "directed": directed,
-            "active_edges": spec.get("active_edges", []),
-            "active_nodes": spec.get("active_nodes", []),
+            "active_edges": active_edges,
+            "active_nodes": active_nodes,
             "node_annotations": spec.get("node_annotations", {}),
+            "node_tones": node_tones,
+            "edge_tones": edge_tones,
+            "legend": legend,
+            "canvas_width": canvas_width,
+            "canvas_height": canvas_height,
         }
     )
 
@@ -1230,14 +1674,16 @@ def _dp_table(spec: dict[str, Any]) -> str:
     top_labels = spec["top_labels"]
     side_labels = spec["side_labels"]
     values = spec["values"]
-    active = set(spec.get("active", []))
+    path = set(spec.get("path", spec.get("active", [])))
+    matches = set(spec.get("matches", []))
+    result_cell = spec.get("result_cell")
     header = '<th class="gc-vis-dp-corner"></th>' + "".join(
         f"<th>{escape(str(label))}</th>" for label in top_labels
     )
     rows = []
     for row_index, row in enumerate(values):
         cells = "".join(
-            f'<td class="{"is-active" if (row_index, column_index) in active else ""}">'
+            f'<td class="{_classes("is-path" if (row_index, column_index) in path else None, "is-match" if (row_index, column_index) in matches else None, "is-result" if (row_index, column_index) == result_cell else None)}">'
             f'{escape("✓" if value is True else "·" if value is False else str(value))}</td>'
             for column_index, value in enumerate(row)
         )
@@ -1245,9 +1691,10 @@ def _dp_table(spec: dict[str, Any]) -> str:
             f"<tr><th>{escape(str(side_labels[row_index]))}</th>{cells}</tr>"
         )
     return (
-        '<div class="gc-vis-dp-table-wrap"><table class="gc-vis-dp-table">'
+        '<div class="gc-vis-dp-block"><div class="gc-vis-dp-table-wrap">'
+        '<table class="gc-vis-dp-table">'
         f"<thead><tr>{header}</tr></thead><tbody>{''.join(rows)}</tbody>"
-        "</table></div>"
+        f"</table></div>{_legend(spec.get('legend'))}</div>"
     )
 
 
@@ -1476,6 +1923,8 @@ def _string_dp_spec(title: str, first: str, second: str, third: str = "") -> dic
     columns = len(first) + 1
     rows = len(second) + 1
     values: list[list[Any]] = [[0] * columns for _ in range(rows)]
+    path: list[tuple[int, int]] = []
+    matches: set[tuple[int, int]] = set()
 
     if title == "Longest Common Subsequence":
         for row in range(1, rows):
@@ -1487,6 +1936,25 @@ def _string_dp_spec(title: str, first: str, second: str, third: str = "") -> dic
                         values[row - 1][column],
                         values[row][column - 1],
                     )
+        row, column = rows - 1, columns - 1
+        while row > 0 or column > 0:
+            path.append((row, column))
+            if (
+                row > 0
+                and column > 0
+                and second[row - 1] == first[column - 1]
+            ):
+                matches.add((row, column))
+                row -= 1
+                column -= 1
+            elif row > 0 and (
+                column == 0 or values[row - 1][column] >= values[row][column - 1]
+            ):
+                row -= 1
+            else:
+                column -= 1
+        path.append((0, 0))
+
     elif title == "Edit Distance":
         values[0] = list(range(columns))
         for row in range(rows):
@@ -1501,6 +1969,29 @@ def _string_dp_spec(title: str, first: str, second: str, third: str = "") -> dic
                         values[row][column - 1],
                         values[row - 1][column - 1],
                     )
+        row, column = rows - 1, columns - 1
+        while row > 0 or column > 0:
+            path.append((row, column))
+            if (
+                row > 0
+                and column > 0
+                and second[row - 1] == first[column - 1]
+                and values[row][column] == values[row - 1][column - 1]
+            ):
+                matches.add((row, column))
+                row -= 1
+                column -= 1
+                continue
+            candidates: list[tuple[int, int, int]] = []
+            if row > 0 and column > 0:
+                candidates.append((values[row - 1][column - 1], row - 1, column - 1))
+            if row > 0:
+                candidates.append((values[row - 1][column], row - 1, column))
+            if column > 0:
+                candidates.append((values[row][column - 1], row, column - 1))
+            _, row, column = min(candidates, key=lambda item: item[0])
+        path.append((0, 0))
+
     elif title == "Distinct Subsequences":
         values[0] = [1] * columns
         for row in range(1, rows):
@@ -1508,6 +1999,14 @@ def _string_dp_spec(title: str, first: str, second: str, third: str = "") -> dic
                 values[row][column] = values[row][column - 1]
                 if second[row - 1] == first[column - 1]:
                     values[row][column] += values[row - 1][column - 1]
+                    if values[row - 1][column - 1] > 0:
+                        matches.add((row, column))
+        path = [
+            (rows - 1, column)
+            for column in range(columns)
+            if values[rows - 1][column] > 0
+        ]
+
     elif title == "Interleaving String":
         bool_values: list[list[bool]] = [
             [False] * columns for _ in range(rows)
@@ -1532,12 +2031,36 @@ def _string_dp_spec(title: str, first: str, second: str, third: str = "") -> dic
                 )
                 bool_values[row][column] = from_top or from_left
         values = bool_values
+        if values[-1][-1]:
+            row, column = rows - 1, columns - 1
+            while row > 0 or column > 0:
+                path.append((row, column))
+                output_index = row + column - 1
+                if (
+                    column > 0
+                    and values[row][column - 1]
+                    and output_index < len(third)
+                    and first[column - 1] == third[output_index]
+                ):
+                    matches.add((row, column))
+                    column -= 1
+                else:
+                    matches.add((row, column))
+                    row -= 1
+            path.append((0, 0))
 
     return {
         "top_labels": ["∅", *first],
         "side_labels": ["∅", *second],
         "values": values,
-        "active": [(rows - 1, columns - 1)],
+        "path": path,
+        "matches": sorted(matches),
+        "result_cell": (rows - 1, columns - 1),
+        "legend": [
+            ("path", "state chain"),
+            ("match", "matching contribution"),
+            ("result", "final answer"),
+        ],
     }
 
 
@@ -2668,10 +3191,16 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
             log for log in logs
             if isinstance(expected, int) and log[0] <= expected
         ]
+        graph_edges = [log[1:3] for log in active_logs]
         return {
             "kind": "graph_auto",
             "label": label,
-            "edges": [log[1:3] for log in active_logs],
+            "edges": graph_edges,
+            "active_edges": graph_edges,
+            "active_nodes": list(
+                dict.fromkeys(node for edge in graph_edges for node in edge)
+            ),
+            "legend": [("active", "connections present by this time")],
             "caption": (
                 "The edges present by the expected timestamp connect everyone "
                 f"for the first time at {result}."
@@ -3165,7 +3694,9 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
         target_values: list[Any] = []
         active_indices: list[int] = []
         target_indices: list[int] = []
+        active_edges: list[tuple[int, int]] = []
         badges: dict[int, int] = {}
+        legend: list[tuple[str, str]] = []
         caption_override: str | None = None
         if decision.get("highlight_result") and isinstance(
             expected, (str, int, float)
@@ -3177,6 +3708,24 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
             target = argument(target_index)
             if isinstance(target, (str, int, float)):
                 target_values.append(target)
+        if (
+            decision.get("highlight_result")
+            and target_values
+            and isinstance(expected, (str, int, float))
+        ):
+            (
+                active_indices,
+                target_indices,
+                active_edges,
+            ) = _tree_edges_between_result_and_targets(
+                values,
+                expected,
+                target_values,
+            )
+            legend = [
+                ("active", "result and connecting path"),
+                ("target", "input target"),
+            ]
         if decision.get("range_arg_indexes"):
             low_index, high_index = decision["range_arg_indexes"]
             low, high = argument(low_index), argument(high_index)
@@ -3189,34 +3738,46 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
         if decision.get("highlight_first_path") and isinstance(expected, list):
             first_path = expected[0] if expected and isinstance(expected[0], list) else []
             active_indices = _tree_path_indices(values, first_path)
+            active_edges = _path_edges(active_indices)
+            legend = [("active", "selected root-to-leaf path")]
         if decision.get("visit_order") and isinstance(expected, list):
             badges = _tree_value_order(values, expected)
+            legend = [("badge", "visit order")]
         if title == "Maximum Depth of Binary Tree":
             active_indices = _tree_depth_path(values)
+            active_edges = _path_edges(active_indices)
+            legend = [("active", "deepest root-to-leaf path")]
             caption_override = (
                 "The highlighted root-to-leaf path contains the maximum depth of "
                 f"{result} nodes."
             )
         elif title == "Minimum Depth of Binary Tree":
             active_indices = _tree_depth_path(values, shortest=True)
+            active_edges = _path_edges(active_indices)
+            legend = [("active", "nearest root-to-leaf path")]
             caption_override = (
                 "The highlighted path reaches the nearest leaf at depth "
                 f"{result}."
             )
         elif title == "Diameter of Binary Tree":
             active_indices = _tree_diameter_path(values)
+            active_edges = _path_edges(active_indices)
+            legend = [("active", "diameter path")]
             caption_override = (
                 "The highlighted longest node-to-node path contains "
                 f"{result} edges."
             )
         elif title == "Binary Tree Maximum Path Sum":
             active_indices = _tree_maximum_sum_path(values)
+            active_edges = _path_edges(active_indices)
+            legend = [("active", "maximum-sum connected path")]
             caption_override = (
                 "The highlighted connected path has the maximum node sum, "
                 f"{result}."
             )
         elif title == "Count Good Nodes in Binary Tree":
             active_indices = _tree_good_node_indices(values)
+            legend = [("active", "good node")]
             caption_override = (
                 "Highlighted nodes are at least as large as every ancestor on "
                 f"their root path; there are {result}."
@@ -3227,6 +3788,8 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
                 argument(1),
                 root_to_leaf=title == "Path Sum",
             )
+            active_edges = _path_edges(active_indices)
+            legend = [("active", "matching sum path")]
             caption_override = (
                 "The highlighted downward path reaches the example's target sum."
                 if active_indices
@@ -3234,18 +3797,21 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
             )
         elif title == "Count Nodes Equal to Average of Subtree":
             active_indices = _tree_average_match_indices(values)
+            legend = [("active", "node equals subtree average")]
             caption_override = (
                 "Each highlighted node equals the integer average of its own "
                 f"subtree; there are {result}."
             )
         elif title == "Sum of Nodes with Even-Valued Grandparent":
             active_indices = _tree_even_grandparent_indices(values)
+            legend = [("active", "counted node")]
             caption_override = (
                 "Highlighted nodes have an even-valued grandparent and contribute "
                 f"to the sum {result}."
             )
         elif title == "Find Leaves of Binary Tree":
             badges = _tree_removal_rounds(values)
+            legend = [("badge", "removal round")]
             caption_override = (
                 "Each badge is the round in which that node becomes a leaf and "
                 "is removed."
@@ -3262,10 +3828,34 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
                 index for index, node in enumerate(nodes)
                 if node["depth"] == deepest
             ]
+            result_index = _tree_index_for_value(nodes, expected[0])
+            if result_index is not None:
+                active_indices = [result_index]
+                edge_set: set[tuple[int, int]] = set()
+                for target_index in target_indices:
+                    path = _tree_path_between(nodes, result_index, target_index)
+                    active_indices.extend(path)
+                    edge_set.update(_edge_key(*edge) for edge in _path_edges(path))
+                active_indices = list(dict.fromkeys(active_indices))
+                active_edges = list(edge_set)
+            legend = [
+                ("active", "lowest common ancestor path"),
+                ("target", "deepest leaf"),
+            ]
             caption_override = (
                 "Orange nodes are the deepest leaves; the blue node is their "
                 "lowest common ancestor."
             )
+        if not legend:
+            if badges:
+                legend = [("badge", "numbered order")]
+            elif target_values or target_indices:
+                legend = [
+                    ("active", "selected result"),
+                    ("target", "input target"),
+                ]
+            elif active_values or active_indices:
+                legend = [("active", "selected node")]
         return {
             "kind": "tree",
             "label": label,
@@ -3274,8 +3864,15 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
             "target_values": target_values,
             "active_indices": active_indices,
             "target_indices": target_indices,
+            "active_edges": active_edges,
             "badges": badges,
             "next_links": decision.get("next_links", False),
+            "legend": (
+                legend
+                or [("next", "next pointer")]
+                if decision.get("next_links", False)
+                else legend
+            ),
             "caption": (
                 caption_override
                 or (
@@ -3396,14 +3993,18 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
 
         active_edges: list[list[Any]] = []
         active_nodes: list[Any] = []
+        legend: list[tuple[str, str]] = []
         if title == "Redundant Connection" and isinstance(expected, list):
             active_edges = [expected]
+            active_nodes = expected
+            legend = [("active", "edge that closes the cycle")]
         if title == "Reconstruct Itinerary" and isinstance(expected, list):
             active_edges = [
                 [expected[index], expected[index + 1]]
                 for index in range(len(expected) - 1)
             ]
             active_nodes = expected
+            legend = [("active", "itinerary route")]
         if decision.get("active_node_arg_index") is not None:
             flags = argument(decision["active_node_arg_index"], [])
             active_nodes = [
@@ -3420,8 +4021,116 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
             }
         if title == "Minimum Time to Collect All Apples in a Tree":
             node_annotations.update({node: "apple" for node in active_nodes})
+            route_edges: set[tuple[Any, Any]] = set()
+            route_nodes = {0, *active_nodes}
+            pair_edges = [(edge[0], edge[1]) for edge in edges]
+            for apple in active_nodes:
+                path_nodes, path_edges = _graph_bfs_path(pair_edges, 0, apple)
+                route_nodes.update(path_nodes)
+                route_edges.update(_edge_key(*edge) for edge in path_edges)
+            active_nodes = list(route_nodes)
+            active_edges = [list(edge) for edge in route_edges]
+            node_annotations[0] = "start"
+            legend = [("active", "edges traversed to collect apples")]
         if title == "Network Delay Time" and active_nodes:
-            node_annotations[active_nodes[0]] = "source"
+            source = active_nodes[0]
+            active_nodes, active_edges = _graph_shortest_path_tree(
+                [tuple(edge) for edge in edges], source
+            )
+            node_annotations[source] = "source"
+            legend = [("active", "shortest-path tree from source")]
+        if title == "Course Schedule II" and isinstance(expected, list):
+            active_nodes = expected
+            active_edges = [edge[:2] for edge in edges]
+            node_annotations.update(
+                {node: f"order {index + 1}" for index, node in enumerate(expected)}
+            )
+            legend = [("active", "prerequisites satisfied by this order")]
+        if title == "Clone Graph":
+            active_edges = [edge[:2] for edge in edges]
+            active_nodes = node_labels or list(
+                dict.fromkeys(node for edge in edges for node in edge[:2])
+            )
+            legend = [("active", "structure copied into the clone")]
+        if title == "Graph Valid Tree" and expected is True:
+            active_edges = [edge[:2] for edge in edges]
+            active_nodes = node_labels or list(
+                dict.fromkeys(node for edge in edges for node in edge[:2])
+            )
+            legend = [("active", "validated tree structure")]
+        if title == "Evaluate Division" and len(args) > 2 and args[2]:
+            query = args[2][0]
+            path_nodes, path_edges = _graph_bfs_path(
+                [(edge[0], edge[1]) for edge in edges],
+                query[0],
+                query[1],
+            )
+            active_nodes = path_nodes
+            active_edges = [list(edge) for edge in path_edges]
+            if path_nodes:
+                node_annotations[path_nodes[0]] = "query start"
+                node_annotations[path_nodes[-1]] = "query end"
+                legend = [("active", "path for the first query")]
+        if title == "Cheapest Flights Within K Stops" and len(args) >= 5:
+            route_nodes, route_edges = _bounded_cheapest_route(
+                [tuple(edge) for edge in edges],
+                args[2],
+                args[3],
+                int(args[4]) + 1,
+            )
+            active_nodes = route_nodes
+            active_edges = [list(edge) for edge in route_edges]
+            if route_nodes:
+                node_annotations[route_nodes[0]] = "source"
+                node_annotations[route_nodes[-1]] = "destination"
+                legend = [("active", "cheapest route within stop limit")]
+        if title == "Minimize Maximum Component Cost" and isinstance(
+            expected, (int, float)
+        ):
+            active_edges = [
+                edge[:2]
+                for edge in edges
+                if len(edge) > 2 and edge[2] <= expected
+            ]
+            active_nodes = list(
+                dict.fromkeys(node for edge in active_edges for node in edge)
+            )
+            legend = [("active", f"edges with cost ≤ {expected}")]
+        if title == "Maximum Path Quality of a Graph":
+            values = argument(decision.get("node_value_arg_index", 0), [])
+            max_time = args[2] if len(args) > 2 else 0
+            route_nodes, route_edges = _maximum_quality_route(
+                values,
+                [tuple(edge) for edge in edges],
+                max_time,
+            )
+            active_nodes = route_nodes
+            active_edges = [list(edge) for edge in route_edges]
+            node_annotations[0] = "start / return"
+            legend = [("active", "best round trip within the time limit")]
+        if title == "Minimum Weighted Subgraph With the Required Paths" and len(args) >= 5:
+            route_nodes, route_edges, meeting = _minimum_weighted_subgraph_route(
+                [tuple(edge) for edge in edges],
+                args[2],
+                args[3],
+                args[4],
+            )
+            active_nodes = route_nodes
+            active_edges = [list(edge) for edge in route_edges]
+            node_annotations[args[2]] = "source 1"
+            node_annotations[args[3]] = "source 2"
+            node_annotations[args[4]] = "destination"
+            if meeting is not None:
+                roles = []
+                if meeting == args[2]:
+                    roles.append("source 1")
+                if meeting == args[3]:
+                    roles.append("source 2")
+                roles.append("meeting")
+                if meeting == args[4]:
+                    roles.append("destination")
+                node_annotations[meeting] = " / ".join(roles)
+            legend = [("active", "minimum combined subgraph")]
 
         weight_note = (
             " Edge labels are the example's weights."
@@ -3437,6 +4146,7 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
             "active_edges": active_edges,
             "active_nodes": active_nodes,
             "node_annotations": node_annotations,
+            "legend": legend,
             "caption": (
                 "The first example's connections are shown as "
                 f"{'directed' if directed else 'undirected'} edges; "
