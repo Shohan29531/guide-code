@@ -1,0 +1,43 @@
+[theme]
+base = "light"
+primaryColor = "#2563EB"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F7F9FC"
+textColor = "#111827"
+linkColor = "#1D4ED8"
+linkUnderline = true
+codeTextColor = "#172033"
+codeBackgroundColor = "#F3F6FA"
+borderColor = "#D7DEEA"
+dataframeBorderColor = "#CBD5E1"
+dataframeHeaderBackgroundColor = "#EEF2F7"
+showWidgetBorder = true
+
+# Keep semantic surfaces readable instead of inheriting dark-mode values.
+redColor = "#B42318"
+redBackgroundColor = "#FFF1F0"
+redTextColor = "#7A271A"
+orangeColor = "#B54708"
+orangeBackgroundColor = "#FFF6ED"
+orangeTextColor = "#7E2410"
+yellowColor = "#9A6700"
+yellowBackgroundColor = "#FFFAEB"
+yellowTextColor = "#713B12"
+blueColor = "#2563EB"
+blueBackgroundColor = "#EFF6FF"
+blueTextColor = "#1E3A8A"
+greenColor = "#067647"
+greenBackgroundColor = "#ECFDF3"
+greenTextColor = "#05603A"
+violetColor = "#6941C6"
+violetBackgroundColor = "#F4F3FF"
+violetTextColor = "#42307D"
+grayColor = "#667085"
+grayBackgroundColor = "#F2F4F7"
+grayTextColor = "#344054"
+
+[client]
+toolbarMode = "minimal"
+
+[server]
+runOnSave = true

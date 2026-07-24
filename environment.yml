@@ -1,0 +1,11 @@
+name: guided-code-lab
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - streamlit>=1.60,<2
+  - pandas>=2.2,<3
+  - requests>=2.32,<3
+  - pip
+  - pip:
+      - streamlit-code-editor==0.1.22
