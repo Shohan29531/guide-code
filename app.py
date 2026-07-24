@@ -3451,22 +3451,26 @@ LEETCODE_EDITOR_CSS = """
     color: #001080 !important;
 }
 .ace-streamlit-light .ace_indent-guide {
-    background-image: linear-gradient(
-        to right,
-        transparent calc(100% - 1px),
-        rgba(148, 163, 184, 0.32) calc(100% - 1px)
-    ) !important;
-    background-position: right top !important;
-    background-repeat: repeat-y !important;
+    position: relative !important;
+    display: inline-block !important;
+    height: 100% !important;
+    vertical-align: top !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+    background: none !important;
 }
-.ace-streamlit-light .ace_indent-guide-active {
-    background-image: linear-gradient(
-        to right,
-        transparent calc(100% - 1px),
-        rgba(100, 116, 139, 0.58) calc(100% - 1px)
-    ) !important;
-    background-position: right top !important;
-    background-repeat: repeat-y !important;
+.ace-streamlit-light .ace_indent-guide::after {
+    content: "";
+    position: absolute;
+    top: -1px;
+    right: 0;
+    bottom: -1px;
+    width: 1px;
+    background: rgba(148, 163, 184, 0.45);
+    pointer-events: none;
+}
+.ace-streamlit-light .ace_indent-guide-active::after {
+    background: rgba(71, 85, 105, 0.72);
 }
 """
 
