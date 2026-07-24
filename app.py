@@ -178,11 +178,41 @@ st.markdown(
         padding-bottom: 3rem;
         max-width: 1380px;
     }
-    .block-container:has(.gc-problem-picker-label) {
+
+    .gc-practice-workspace-marker {
+        display: none;
+    }
+    [data-testid="stElementContainer"]:has(.gc-practice-workspace-marker) {
+        height: 0 !important;
+        margin: 0 !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+    }
+    html:has(.gc-practice-workspace-marker),
+    body:has(.gc-practice-workspace-marker),
+    .stApp:has(.gc-practice-workspace-marker),
+    .stApp:has(.gc-practice-workspace-marker) [data-testid="stAppViewContainer"],
+    .stApp:has(.gc-practice-workspace-marker) [data-testid="stMain"] {
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+    }
+    .stApp:has(.gc-practice-workspace-marker)
+    [data-testid="stMainBlockContainer"] {
+        box-sizing: border-box !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        min-height: 0 !important;
         max-width: none !important;
-        padding-left: .75rem !important;
-        padding-right: .75rem !important;
+        overflow: hidden !important;
+        padding: .55rem .75rem !important;
         width: 100% !important;
+    }
+    .stApp:has(.gc-practice-workspace-marker)
+    [data-testid="stSidebarContent"] {
+        overflow: hidden !important;
     }
 
     [data-testid="stSidebar"],
@@ -193,6 +223,25 @@ st.markdown(
     }
     [data-testid="stSidebar"] {
         border-right: 1px solid var(--gc-border);
+    }
+    .gc-sidebar-problem-label {
+        color: #344054 !important;
+        font-size: .72rem;
+        font-weight: 750;
+        letter-spacing: .02em;
+        margin: .7rem 0 .28rem;
+    }
+    [data-testid="stSidebar"] [data-testid="stSelectbox"] {
+        margin: 0 !important;
+    }
+    [data-testid="stSidebar"] .react-aria-ComboBox,
+    [data-testid="stSidebar"] .react-aria-ComboBox > [role="group"] {
+        background: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        min-height: 2.1rem !important;
+    }
+    [data-testid="stSidebar"] .react-aria-ComboBox input[role="combobox"] {
+        font-size: .8rem !important;
     }
 
     .gc-hero {
@@ -282,10 +331,70 @@ st.markdown(
     .gc-vis-stage {
         box-sizing: border-box;
         max-width: 100%;
-        overflow: hidden;
-        padding: .2rem 0;
+        min-width: 0;
+        overflow: visible;
+        padding: .45rem .1rem .65rem;
         width: 100%;
     }
+    .gc-vis-legend {
+        align-items: center;
+        color: #526071;
+        display: flex;
+        flex-wrap: wrap;
+        font-size: .66rem;
+        gap: .3rem .75rem;
+        line-height: 1.2;
+        margin-top: .42rem;
+    }
+    .gc-vis-legend-item {
+        align-items: center;
+        display: inline-flex;
+        gap: .28rem;
+    }
+    .gc-vis-legend-item i {
+        background: #e7efff;
+        border: 1px solid #4c7dd9;
+        border-radius: 50%;
+        box-sizing: border-box;
+        display: inline-block;
+        height: .62rem;
+        width: .62rem;
+    }
+    .gc-vis-legend-item i.target {
+        background: #fff1e7;
+        border-color: #e99554;
+    }
+    .gc-vis-legend-item i.badge {
+        background: #2f6fed;
+        border: 2px solid #dbe8ff;
+    }
+    .gc-vis-legend-item i.next {
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        border-top: 2px dashed #b57616;
+        height: 0;
+        width: .85rem;
+    }
+    .gc-vis-legend-item i.path {
+        background: #e7efff;
+        border-color: #4c7dd9;
+        border-radius: 3px;
+    }
+    .gc-vis-legend-item i.match {
+        background: #e8f7ee;
+        border-color: #55a977;
+        border-radius: 3px;
+    }
+    .gc-vis-legend-item i.result {
+        background: #fff1e7;
+        border-color: #e99554;
+        border-radius: 3px;
+    }
+    .gc-vis-legend-item i.tone-1 { background: #e8f0ff; border-color: #6f94d8; }
+    .gc-vis-legend-item i.tone-2 { background: #e8f7ee; border-color: #69ad82; }
+    .gc-vis-legend-item i.tone-3 { background: #fff1e7; border-color: #dc8c50; }
+    .gc-vis-legend-item i.tone-4 { background: #f2eaff; border-color: #9a82ca; }
     .gc-problem-visual figcaption {
         color: #526071;
         font-size: .78rem;
@@ -302,10 +411,14 @@ st.markdown(
         display: flex;
         gap: .24rem;
         max-width: 100%;
+        overflow-x: auto;
+        overflow-y: visible;
+        padding: .06rem .04rem .36rem;
+        scrollbar-gutter: stable;
     }
     .gc-vis-cell-wrap {
-        flex: 1 1 2rem;
-        min-width: 0;
+        flex: 1 0 var(--gc-vis-cell-width, 2.15rem);
+        min-width: var(--gc-vis-cell-width, 2.15rem);
         position: relative;
         text-align: center;
     }
@@ -371,15 +484,15 @@ st.markdown(
         background: #fff3e8;
         border-color: #efbc8f;
     }
-    .gc-vis-cell.has-break {
+    .gc-vis-cell-wrap.has-break-after {
         margin-right: .7rem;
     }
-    .gc-vis-cell.has-break::after {
+    .gc-vis-cell-wrap.has-break-after::after {
         border-right: 2px dashed #98a2b3;
         bottom: -.05rem;
         content: "";
         position: absolute;
-        right: -.5rem;
+        right: -.42rem;
         top: -.05rem;
     }
     .gc-vis-bars {
@@ -462,16 +575,22 @@ st.markdown(
         transform: translateX(-50%);
         white-space: nowrap;
     }
+    .gc-vis-grid-scroll {
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: .08rem .05rem .35rem;
+        scrollbar-gutter: stable;
+    }
     .gc-vis-grid {
         display: grid;
         gap: .22rem;
-        grid-template-columns: repeat(var(--gc-grid-columns), minmax(0, 2.35rem));
-        max-width: 100%;
-        width: min(100%, calc(var(--gc-grid-columns) * 2.57rem));
+        grid-template-columns: repeat(var(--gc-grid-columns), var(--gc-grid-cell-width));
+        max-width: none;
+        width: max-content;
     }
     .gc-vis-grid-cell {
         align-items: center;
-        aspect-ratio: 1;
         background: #f3f5f8;
         border: 1px solid #d8dee8;
         border-radius: 4px;
@@ -480,11 +599,13 @@ st.markdown(
         font-family: SFMono-Regular, Consolas, monospace;
         font-size: .76rem;
         font-weight: 700;
+        height: var(--gc-grid-cell-height);
         justify-content: center;
         min-width: 0;
-        overflow: hidden;
+        overflow: visible;
+        padding: 0 .2rem;
         position: relative;
-        text-overflow: ellipsis;
+        text-overflow: clip;
     }
     .gc-vis-grid-cell small {
         color: #345995;
@@ -779,45 +900,61 @@ st.markdown(
         line-height: .6;
         margin-left: 3.7rem;
     }
-    .gc-vis-graph {
-        aspect-ratio: 2 / 1;
-        box-sizing: border-box;
-        max-width: 25rem;
-        position: relative;
-        width: 100%;
+    .gc-vis-graph-block {
+        max-width: 100%;
+        min-width: 0;
     }
-    .gc-vis-graph-edge {
-        background: #aeb8c6;
-        height: 2px;
+    .gc-vis-graph-scroll {
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: .45rem .5rem 1.55rem;
+        scrollbar-gutter: stable;
+    }
+    .gc-vis-graph {
+        box-sizing: border-box;
+        height: var(--gc-graph-height);
+        margin: 0 auto;
+        min-width: var(--gc-graph-width);
+        position: relative;
+        width: var(--gc-graph-width);
+    }
+    .gc-vis-graph-svg {
+        height: 100%;
+        inset: 0;
+        overflow: visible;
         position: absolute;
-        transform-origin: left center;
+        width: 100%;
         z-index: 1;
     }
+    .gc-vis-graph-edge {
+        fill: none;
+        stroke: #aeb8c6;
+        stroke-linecap: round;
+        stroke-width: 2;
+        vector-effect: non-scaling-stroke;
+    }
     .gc-vis-graph-edge.is-active {
-        background: #2f6fed;
-        height: 3px;
+        stroke: #2f6fed;
+        stroke-width: 3;
     }
-    .gc-vis-graph-edge.is-directed::after {
-        border-bottom: 4px solid transparent;
-        border-left: 7px solid #7f8b9c;
-        border-top: 4px solid transparent;
-        content: "";
-        position: absolute;
-        right: 0;
-        top: -3px;
-    }
+    .gc-vis-graph-edge.tone-1 { stroke: #6f94d8; }
+    .gc-vis-graph-edge.tone-2 { stroke: #69ad82; }
+    .gc-vis-graph-edge.tone-3 { stroke: #dc8c50; }
+    .gc-vis-graph-edge.tone-4 { stroke: #9a82ca; }
+    .gc-vis-graph-arrow { fill: #7f8b9c; }
+    .gc-vis-graph-arrow-active { fill: #2f6fed; }
     .gc-vis-graph-edge-label {
         background: #fff;
         border: 1px solid #d8dee8;
         border-radius: 3px;
         color: #344054;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .58rem;
-        left: 50%;
+        font-size: .6rem;
         line-height: 1;
-        padding: .12rem .2rem;
+        padding: .13rem .22rem;
         position: absolute;
-        top: 50%;
+        transform: translate(-50%, -50%);
         white-space: nowrap;
         z-index: 3;
     }
@@ -826,17 +963,44 @@ st.markdown(
         background: #f3f5f8;
         border: 1px solid #aeb8c6;
         border-radius: 50%;
+        box-sizing: border-box;
         color: #344054;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
         font-size: .75rem;
         font-weight: 700;
-        height: 1.75rem;
+        height: 1.88rem;
         justify-content: center;
         position: absolute;
         transform: translate(-50%, -50%);
-        width: 1.75rem;
+        width: 1.88rem;
         z-index: 2;
+    }
+    .gc-vis-graph-node.is-active {
+        background: #e7efff;
+        border-color: #2f6fed;
+        box-shadow: 0 0 0 2px rgba(47, 111, 237, .12);
+        color: #173b78;
+    }
+    .gc-vis-graph-node.tone-1 {
+        background: #e8f0ff;
+        border-color: #6f94d8;
+        color: #244b89;
+    }
+    .gc-vis-graph-node.tone-2 {
+        background: #e8f7ee;
+        border-color: #69ad82;
+        color: #17613a;
+    }
+    .gc-vis-graph-node.tone-3 {
+        background: #fff1e7;
+        border-color: #dc8c50;
+        color: #873800;
+    }
+    .gc-vis-graph-node.tone-4 {
+        background: #f2eaff;
+        border-color: #9a82ca;
+        color: #553b86;
     }
     .gc-vis-graph-node.is-active {
         background: #e7efff;
@@ -847,12 +1011,16 @@ st.markdown(
         font: inherit;
     }
     .gc-vis-graph-node small {
+        background: rgba(255, 255, 255, .94);
+        border-radius: 3px;
         color: #526071;
-        font-size: .57rem;
-        font-weight: 600;
+        font-size: .58rem;
+        font-weight: 650;
         left: 50%;
+        line-height: 1.15;
+        padding: .08rem .18rem;
         position: absolute;
-        top: 1.82rem;
+        top: 1.95rem;
         transform: translateX(-50%);
         white-space: nowrap;
     }
@@ -1089,29 +1257,49 @@ st.markdown(
         font-size: .7rem;
         padding-top: .3rem;
     }
+    .gc-vis-tree-block {
+        max-width: 100%;
+        min-width: 0;
+    }
+    .gc-vis-tree-scroll {
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: .55rem .5rem .75rem;
+        scrollbar-gutter: stable;
+    }
     .gc-vis-tree {
-        max-width: 32rem;
-        min-height: 92px;
+        margin: 0 auto;
         position: relative;
+    }
+    .gc-vis-tree-svg {
+        height: 100%;
+        inset: 0;
+        overflow: visible;
+        position: absolute;
         width: 100%;
+        z-index: 1;
     }
     .gc-vis-tree-edge {
-        background: #b9c2cf;
-        height: 2px;
-        position: absolute;
-        transform-origin: left center;
-        z-index: 1;
+        fill: none;
+        stroke: #b9c2cf;
+        stroke-linecap: round;
+        stroke-width: 2;
+        vector-effect: non-scaling-stroke;
+    }
+    .gc-vis-tree-edge.is-active {
+        stroke: #2f6fed;
+        stroke-width: 3;
     }
     .gc-vis-tree-next-link {
-        border-top: 1px dashed #c58b2b;
-        color: #9a6700;
-        font-size: .85rem;
-        font-weight: 800;
-        height: 1px;
-        line-height: 0;
-        position: absolute;
-        text-align: right;
-        z-index: 1;
+        fill: none;
+        stroke: #b57616;
+        stroke-dasharray: 5 4;
+        stroke-width: 1.5;
+        vector-effect: non-scaling-stroke;
+    }
+    #gc-vis-tree-next-arrow path {
+        fill: #b57616;
     }
     .gc-vis-list-loop {
         color: #667085;
@@ -1125,21 +1313,23 @@ st.markdown(
         background: #f3f5f8;
         border: 1px solid #aeb8c6;
         border-radius: 50%;
+        box-sizing: border-box;
         color: #344054;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
         font-size: .72rem;
         font-weight: 700;
-        height: 1.75rem;
+        height: 1.9rem;
         justify-content: center;
         position: absolute;
         transform: translate(-50%, -50%);
-        width: 1.75rem;
+        width: 1.9rem;
         z-index: 2;
     }
     .gc-vis-tree-node.is-active {
         background: #e7efff;
-        border-color: #4c7dd9;
+        border-color: #2f6fed;
+        box-shadow: 0 0 0 2px rgba(47, 111, 237, .12);
         color: #173b78;
     }
     .gc-vis-tree-node.is-target {
@@ -1158,18 +1348,18 @@ st.markdown(
         color: #fff;
         display: flex;
         font-size: .5rem;
-        height: .85rem;
+        height: .9rem;
         justify-content: center;
         position: absolute;
-        right: -.38rem;
-        top: -.4rem;
-        width: .85rem;
+        right: -.42rem;
+        top: -.44rem;
+        width: .9rem;
     }
     .gc-vis-tree-collection {
         align-items: start;
-        display: flex;
-        flex-wrap: wrap;
-        gap: .65rem;
+        display: grid;
+        gap: .9rem;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
         max-width: 100%;
     }
     .gc-vis-tree-list {
@@ -1183,11 +1373,14 @@ st.markdown(
         min-width: 0;
     }
     .gc-vis-tree-panel {
-        flex: 1 1 14rem;
         min-width: 0;
+        width: 100%;
     }
-    .gc-vis-tree-panel .gc-vis-tree {
-        max-width: 22rem;
+    .gc-vis-tree-panel .gc-vis-tree-scroll {
+        border: 1px solid #edf0f4;
+        border-radius: 6px;
+        padding-left: .35rem;
+        padding-right: .35rem;
     }
     .gc-vis-empty {
         color: #667085;
@@ -1264,9 +1457,16 @@ st.markdown(
         background: #f3f5f8;
         border: 1px solid #e0e5ec;
     }
+    .gc-vis-dp-block {
+        max-width: 100%;
+        min-width: 0;
+    }
     .gc-vis-dp-table-wrap {
         max-width: 100%;
-        overflow: hidden;
+        overflow-x: auto;
+        overflow-y: visible;
+        padding: .15rem .1rem .5rem;
+        scrollbar-gutter: stable;
     }
     .gc-vis-dp-table {
         border-collapse: separate;
@@ -1285,19 +1485,38 @@ st.markdown(
         text-align: center;
     }
     .gc-vis-dp-table th {
+        background: #fff;
         color: #526071;
         font-weight: 700;
+    }
+    .gc-vis-dp-table tbody th {
+        left: 0;
+        position: sticky;
+        z-index: 2;
     }
     .gc-vis-dp-table td {
         background: #f3f5f8;
         border: 1px solid #e0e5ec;
         color: #344054;
     }
-    .gc-vis-dp-table td.is-active {
+    .gc-vis-dp-table td.is-path {
         background: #e7efff;
         border-color: #4c7dd9;
         color: #173b78;
+        font-weight: 750;
+    }
+    .gc-vis-dp-table td.is-match {
+        background: #e8f7ee;
+        border-color: #55a977;
+        color: #135f35;
         font-weight: 800;
+    }
+    .gc-vis-dp-table td.is-result {
+        background: #fff1e7;
+        border-color: #e99554;
+        box-shadow: inset 0 0 0 1px #e99554;
+        color: #873800;
+        font-weight: 850;
     }
     .gc-vis-pyramid {
         display: grid;
@@ -1932,6 +2151,9 @@ st.markdown(
         display: flex;
         height: 2.35rem;
     }
+    .gc-code-bar-marker .gc-pane-title {
+        transform: translateY(-3px);
+    }
     .gc-problem-bar-spacer {
         height: 1.65rem;
     }
@@ -2005,6 +2227,13 @@ st.markdown(
     [data-testid="stColumn"]:has(.gc-code-pane-marker):not(:has(.gc-problem-pane-marker))
     > [data-testid="stVerticalBlock"] {
         gap: 0 !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+    }
+    [data-testid="stColumn"]:has(.gc-code-pane-marker):not(:has(.gc-problem-pane-marker))
+    > [data-testid="stVerticalBlock"] > [data-testid="stElementContainer"] {
+        min-height: 0 !important;
     }
     .gc-judge-panel-marker {
         height: 0;
@@ -2037,9 +2266,9 @@ st.markdown(
     }
     [data-testid="stVerticalBlock"][class*="st-key-testcase_region--"]
     > [data-testid="stElementContainer"]:has(.gc-judge-panel-marker) {
-        flex: 1 1 auto !important;
+        flex: 0 0 auto !important;
         min-height: 0 !important;
-        overflow: hidden !important;
+        overflow: visible !important;
     }
     [data-testid="stVerticalBlock"][class*="st-key-testcase_region--"]
     > [data-testid="stElementContainer"]:has(.gc-console-actions-marker) {
@@ -2047,9 +2276,29 @@ st.markdown(
     }
     [data-testid="stVerticalBlock"][class*="st-key-testcase_region--"]
     [data-testid="stVerticalBlock"][class*="st-key-judge_panel--"] {
-        height: 100% !important;
+        height: auto !important;
         min-height: 0 !important;
+        overflow: visible !important;
+    }
+    [data-testid="stVerticalBlock"][class*="st-key-testcase_region--"].gc-console-collapsed {
+        gap: 0 !important;
+        padding-top: .2rem !important;
+    }
+    [data-testid="stVerticalBlock"][class*="st-key-testcase_region--"].gc-console-collapsed
+    > [data-testid="stElementContainer"]:has(.gc-judge-panel-marker) {
+        display: none !important;
+    }
+    [data-testid="stVerticalBlock"][class*="st-key-testcase_region--"].gc-console-overflow
+    > [data-testid="stElementContainer"]:has(.gc-judge-panel-marker) {
+        flex: 1 1 auto !important;
+        overflow: hidden !important;
+    }
+    [data-testid="stVerticalBlock"][class*="st-key-testcase_region--"].gc-console-overflow
+    [data-testid="stVerticalBlock"][class*="st-key-judge_panel--"] {
+        height: 100% !important;
         overflow-y: auto !important;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
     }
     .gc-console-empty {
         color: #667085 !important;
@@ -2079,11 +2328,19 @@ st.markdown(
     .gc-console-status {
         align-items: baseline;
         display: flex;
-        gap: .45rem;
-        margin: .15rem 0 .35rem;
+        flex-wrap: wrap;
+        gap: .2rem .45rem;
+        line-height: 1.3;
+        margin: .15rem 0 0;
+        min-height: 1.55rem;
+        padding-bottom: .55rem;
+    }
+    [data-testid="stElementContainer"]:has(.gc-console-status) {
+        margin-bottom: .12rem !important;
     }
     .gc-console-status strong {
         font-size: .94rem;
+        line-height: 1.3;
     }
     .gc-console-status.is-pass strong {
         color: #16803a !important;
@@ -2274,8 +2531,8 @@ st.markdown(
         [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
         > [data-testid="stColumn"] {
             box-sizing: border-box;
-            height: calc(100dvh - 4.5rem);
-            max-height: calc(100dvh - 4.5rem);
+            height: calc(100dvh - 1.1rem);
+            max-height: calc(100dvh - 1.1rem);
             min-height: 340px;
         }
         [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
@@ -2300,6 +2557,21 @@ st.markdown(
         width: 100%;
     }
     @media (max-width: 900px) {
+        html:has(.gc-practice-workspace-marker),
+        body:has(.gc-practice-workspace-marker),
+        .stApp:has(.gc-practice-workspace-marker),
+        .stApp:has(.gc-practice-workspace-marker) [data-testid="stAppViewContainer"],
+        .stApp:has(.gc-practice-workspace-marker) [data-testid="stMain"],
+        .stApp:has(.gc-practice-workspace-marker)
+        [data-testid="stMainBlockContainer"] {
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+        }
+        .stApp:has(.gc-practice-workspace-marker)
+        [data-testid="stSidebarContent"] {
+            overflow-y: auto !important;
+        }
         [data-testid="stColumn"]:has(.gc-column-resizer-marker) {
             display: none !important;
         }
@@ -3489,8 +3761,10 @@ def render_column_resizer(username: str) -> None:
     )
 
 
-def render_workspace_resizer(username: str) -> None:
-    storage_key = json.dumps(f"guidedcode-code-ratio::{username}")
+def render_workspace_resizer(username: str, force_expand: bool = False) -> None:
+    ratio_storage_key = json.dumps(f"guidedcode-code-ratio::{username}")
+    collapsed_storage_key = json.dumps(f"guidedcode-console-collapsed::{username}")
+    force_expand_js = "true" if force_expand else "false"
     handle_html = """
     <!doctype html>
     <html>
@@ -3498,37 +3772,77 @@ def render_workspace_resizer(username: str) -> None:
         <meta charset="utf-8">
         <style>
             html, body {
-                background: #e7eaf0;
-                height: 20px;
+                background: #eef1f5;
+                height: 28px;
                 margin: 0;
                 overflow: hidden;
                 user-select: none;
             }
             #gc-resize-handle {
                 align-items: center;
-                cursor: row-resize;
-                display: flex;
-                height: 18px;
-                justify-content: center;
-                outline: none;
                 border-bottom: 1px solid #cbd2dc;
                 border-top: 1px solid #cbd2dc;
+                box-sizing: border-box;
+                cursor: row-resize;
+                display: flex;
+                height: 28px;
+                justify-content: space-between;
+                outline: none;
+                padding: 0 7px 0 10px;
                 touch-action: none;
                 width: 100%;
             }
-            #gc-resize-handle::before {
+            #gc-resize-handle.is-dragging {
+                background: #edf3ff;
+            }
+            .gc-console-handle-label {
+                align-items: center;
+                color: #344054;
+                display: flex;
+                font: 700 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                gap: 8px;
+                pointer-events: none;
+            }
+            .gc-console-grip {
                 background: #8f9bad;
                 border-radius: 999px;
-                content: "";
                 height: 4px;
                 transition: background .12s ease, width .12s ease;
-                width: 42px;
+                width: 34px;
             }
-            #gc-resize-handle:hover::before,
-            #gc-resize-handle:focus-visible::before,
-            #gc-resize-handle.is-dragging::before {
+            #gc-resize-handle:hover .gc-console-grip,
+            #gc-resize-handle:focus-visible .gc-console-grip,
+            #gc-resize-handle.is-dragging .gc-console-grip {
                 background: #2f6fed;
-                width: 58px;
+                width: 46px;
+            }
+            #gc-console-toggle {
+                align-items: center;
+                background: transparent;
+                border: 0;
+                border-radius: 5px;
+                color: #475467;
+                cursor: pointer;
+                display: flex;
+                font: 700 16px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                height: 22px;
+                justify-content: center;
+                padding: 0;
+                width: 26px;
+            }
+            #gc-console-toggle:hover,
+            #gc-console-toggle:focus-visible {
+                background: #dfe7f2;
+                color: #1d4ed8;
+                outline: none;
+            }
+            #gc-console-toggle span {
+                display: block;
+                transform: rotate(0deg);
+                transition: transform .14s ease;
+            }
+            #gc-console-toggle[aria-expanded="false"] span {
+                transform: rotate(180deg);
             }
         </style>
     </head>
@@ -3538,26 +3852,44 @@ def render_workspace_resizer(username: str) -> None:
             role="separator"
             aria-label="Resize code editor and testcase panel"
             aria-orientation="horizontal"
-            aria-valuemin="25"
-            aria-valuemax="80"
+            aria-valuemin="20"
+            aria-valuemax="88"
             tabindex="0"
-        ></div>
+        >
+            <div class="gc-console-handle-label">
+                <span class="gc-console-grip"></span>
+                <span>Console</span>
+            </div>
+            <button
+                id="gc-console-toggle"
+                type="button"
+                aria-label="Minimize testcase panel"
+                aria-expanded="true"
+                title="Minimize testcase panel"
+            ><span>⌄</span></button>
+        </div>
         <script>
         (() => {
             const DEFAULT_RATIO = .66;
-            const MIN_CODE_HEIGHT = 180;
-            const MIN_TESTCASE_HEIGHT = 170;
-            const STORAGE_KEY = __STORAGE_KEY__;
+            const MIN_CODE_HEIGHT = 150;
+            const MIN_EXPANDED_TESTCASE_HEIGHT = 118;
+            const COLLAPSED_TESTCASE_HEIGHT = 52;
+            const RATIO_STORAGE_KEY = __RATIO_STORAGE_KEY__;
+            const COLLAPSED_STORAGE_KEY = __COLLAPSED_STORAGE_KEY__;
+            const FORCE_EXPAND = __FORCE_EXPAND__;
             const handle = document.getElementById("gc-resize-handle");
+            const toggle = document.getElementById("gc-console-toggle");
             let splitRatio = DEFAULT_RATIO;
             let codeHeight = 0;
+            let collapsed = false;
             let startHeight = 0;
             let startY = 0;
             let columnObserver = null;
+            let applying = false;
 
             const forceHeight = (element, pixels) => {
                 if (!element) return;
-                const value = `${pixels}px`;
+                const value = `${Math.max(0, Math.round(pixels))}px`;
                 element.style.setProperty("height", value, "important");
                 element.style.setProperty("min-height", value, "important");
                 element.style.setProperty("max-height", value, "important");
@@ -3571,7 +3903,8 @@ def render_workspace_resizer(username: str) -> None:
                     const editorFrame = [...column.querySelectorAll("iframe")]
                         .find((candidate) => (
                             candidate !== frame
-                            && candidate.getBoundingClientRect().height > 100
+                            && !candidate.closest('[class*="st-key-resize_handle--"]')
+                            && candidate.getBoundingClientRect().height > 80
                         ));
                     const editorHost = editorFrame
                         ? editorFrame.closest('[data-testid="stElementContainer"]')
@@ -3582,6 +3915,16 @@ def render_workspace_resizer(username: str) -> None:
                     const testcaseHost = testcaseRegion
                         ? testcaseRegion.closest('[data-testid="stElementContainer"]')
                         : null;
+                    const judgeHost = testcaseRegion
+                        ? [...testcaseRegion.children].find(
+                            (child) => child.querySelector?.(".gc-judge-panel-marker")
+                        )
+                        : null;
+                    const actionsHost = testcaseRegion
+                        ? [...testcaseRegion.children].find(
+                            (child) => child.querySelector?.(".gc-console-actions-marker")
+                        )
+                        : null;
                     return {
                         frame,
                         host,
@@ -3590,6 +3933,8 @@ def render_workspace_resizer(username: str) -> None:
                         editorHost,
                         testcaseRegion,
                         testcaseHost,
+                        judgeHost,
+                        actionsHost,
                     };
                 } catch (_) {
                     return null;
@@ -3614,28 +3959,73 @@ def render_workspace_resizer(username: str) -> None:
                 );
             };
 
-            const applySplit = (nextHeight, persist = false) => {
-                const workspace = locateWorkspace();
-                if (!workspace) return;
-                const totalHeight = availableHeight(workspace);
-                const minimumCode = Math.min(
-                    MIN_CODE_HEIGHT,
-                    Math.floor(totalHeight * .45)
-                );
-                const minimumTestcase = Math.min(
-                    MIN_TESTCASE_HEIGHT,
-                    Math.floor(totalHeight * .4)
-                );
-                codeHeight = Math.max(
-                    minimumCode,
-                    Math.min(
-                        totalHeight - minimumTestcase,
-                        Math.round(nextHeight)
+            const naturalTestcaseHeight = (workspace) => {
+                if (!workspace?.testcaseRegion) return MIN_EXPANDED_TESTCASE_HEIGHT;
+                const regionStyles = window.parent.getComputedStyle(workspace.testcaseRegion);
+                const paddingTop = Number.parseFloat(regionStyles.paddingTop) || 0;
+                const paddingBottom = Number.parseFloat(regionStyles.paddingBottom) || 0;
+                const gap = Number.parseFloat(regionStyles.rowGap) || 0;
+                const judgeHeight = workspace.judgeHost
+                    ? Math.max(
+                        workspace.judgeHost.scrollHeight,
+                        workspace.judgeHost.getBoundingClientRect().height
                     )
+                    : 0;
+                const actionsHeight = workspace.actionsHost
+                    ? Math.max(
+                        workspace.actionsHost.scrollHeight,
+                        workspace.actionsHost.getBoundingClientRect().height
+                    )
+                    : 0;
+                return Math.ceil(
+                    paddingTop
+                    + paddingBottom
+                    + judgeHeight
+                    + actionsHeight
+                    + (judgeHeight && actionsHeight ? gap : 0)
+                    + 4
                 );
-                const testcaseHeight = totalHeight - codeHeight;
-                splitRatio = codeHeight / totalHeight;
-                {
+            };
+
+            const setToggleState = () => {
+                toggle.setAttribute("aria-expanded", String(!collapsed));
+                toggle.setAttribute(
+                    "aria-label",
+                    collapsed ? "Expand testcase panel" : "Minimize testcase panel"
+                );
+                toggle.setAttribute(
+                    "title",
+                    collapsed ? "Expand testcase panel" : "Minimize testcase panel"
+                );
+            };
+
+            const applyTestcaseHeight = (
+                requestedTestcaseHeight,
+                persistRatio = false,
+                allowOverflow = false
+            ) => {
+                const workspace = locateWorkspace();
+                if (!workspace || applying) return;
+                if (!collapsed && workspace.testcaseRegion) {
+                    workspace.testcaseRegion.classList.remove("gc-console-collapsed");
+                }
+                const totalHeight = availableHeight(workspace);
+                if (totalHeight <= 1) return;
+                applying = true;
+                try {
+                    const maximumTestcase = Math.max(
+                        COLLAPSED_TESTCASE_HEIGHT,
+                        totalHeight - Math.min(MIN_CODE_HEIGHT, totalHeight * .55)
+                    );
+                    const testcaseHeight = collapsed
+                        ? Math.min(COLLAPSED_TESTCASE_HEIGHT, totalHeight)
+                        : Math.max(
+                            Math.min(MIN_EXPANDED_TESTCASE_HEIGHT, maximumTestcase),
+                            Math.min(maximumTestcase, Math.round(requestedTestcaseHeight))
+                        );
+                    codeHeight = Math.max(1, totalHeight - testcaseHeight);
+                    splitRatio = codeHeight / totalHeight;
+
                     const {
                         editorFrame,
                         editorHost,
@@ -3651,6 +4041,15 @@ def render_workspace_resizer(username: str) -> None:
                         forceHeight(editorHost, codeHeight);
                     }
                     if (testcaseRegion && testcaseHost) {
+                        const needsOverflow = !collapsed && (
+                            allowOverflow
+                            || naturalTestcaseHeight(workspace) > testcaseHeight + 1
+                        );
+                        testcaseRegion.classList.toggle("gc-console-collapsed", collapsed);
+                        testcaseRegion.classList.toggle(
+                            "gc-console-overflow",
+                            needsOverflow
+                        );
                         let current = testcaseRegion;
                         while (current && current !== testcaseHost) {
                             forceHeight(current, testcaseHeight);
@@ -3658,40 +4057,110 @@ def render_workspace_resizer(username: str) -> None:
                         }
                         forceHeight(testcaseHost, testcaseHeight);
                     }
-                }
-                const percent = Math.round(splitRatio * 100);
-                handle.setAttribute("aria-valuenow", String(percent));
-                handle.setAttribute(
-                    "aria-valuetext",
-                    `Code ${percent}%, testcases ${100 - percent}%`
-                );
-                if (persist) {
-                    try {
-                        window.localStorage.setItem(
-                            STORAGE_KEY,
-                            String(splitRatio)
-                        );
-                    } catch (_) {}
+
+                    const percent = Math.round(splitRatio * 100);
+                    handle.setAttribute("aria-valuenow", String(percent));
+                    handle.setAttribute(
+                        "aria-valuetext",
+                        collapsed
+                            ? "Testcase panel minimized"
+                            : `Code ${percent}%, testcases ${100 - percent}%`
+                    );
+                    setToggleState();
+                    if (persistRatio && !collapsed) {
+                        try {
+                            window.localStorage.setItem(
+                                RATIO_STORAGE_KEY,
+                                String(splitRatio)
+                            );
+                        } catch (_) {}
+                    }
+                } finally {
+                    applying = false;
                 }
             };
 
-            const applyRatio = () => {
+            const autoFit = (preferSavedSize = true) => {
                 const workspace = locateWorkspace();
                 if (!workspace) return;
-                applySplit(availableHeight(workspace) * splitRatio);
+                if (!collapsed && workspace.testcaseRegion) {
+                    workspace.testcaseRegion.classList.remove("gc-console-collapsed");
+                }
+                const totalHeight = availableHeight(workspace);
+                if (totalHeight <= 1) return;
+                if (collapsed) {
+                    applyTestcaseHeight(COLLAPSED_TESTCASE_HEIGHT);
+                    return;
+                }
+                const naturalHeight = naturalTestcaseHeight(workspace);
+                const savedHeight = preferSavedSize
+                    ? totalHeight * (1 - splitRatio)
+                    : 0;
+                const maximumTestcase = Math.max(
+                    COLLAPSED_TESTCASE_HEIGHT,
+                    totalHeight - Math.min(MIN_CODE_HEIGHT, totalHeight * .55)
+                );
+                const desiredHeight = Math.max(
+                    MIN_EXPANDED_TESTCASE_HEIGHT,
+                    naturalHeight,
+                    savedHeight
+                );
+                applyTestcaseHeight(
+                    desiredHeight,
+                    false,
+                    naturalHeight > maximumTestcase
+                );
+            };
+
+            const setCollapsed = (nextCollapsed) => {
+                collapsed = Boolean(nextCollapsed);
+                try {
+                    window.localStorage.setItem(
+                        COLLAPSED_STORAGE_KEY,
+                        collapsed ? "1" : "0"
+                    );
+                } catch (_) {}
+                if (collapsed) {
+                    applyTestcaseHeight(COLLAPSED_TESTCASE_HEIGHT);
+                } else {
+                    autoFit(false);
+                }
             };
 
             try {
                 const saved = Number.parseFloat(
-                    window.localStorage.getItem(STORAGE_KEY)
+                    window.localStorage.getItem(RATIO_STORAGE_KEY)
                 );
-                if (Number.isFinite(saved)) splitRatio = saved;
+                if (Number.isFinite(saved) && saved > .15 && saved < .95) {
+                    splitRatio = saved;
+                }
+                collapsed = window.localStorage.getItem(COLLAPSED_STORAGE_KEY) === "1";
             } catch (_) {}
 
+            if (FORCE_EXPAND) {
+                collapsed = false;
+                try {
+                    window.localStorage.setItem(COLLAPSED_STORAGE_KEY, "0");
+                } catch (_) {}
+            }
+
+            toggle.addEventListener("click", (event) => {
+                event.stopPropagation();
+                setCollapsed(!collapsed);
+            });
+            toggle.addEventListener("pointerdown", (event) => {
+                event.stopPropagation();
+            });
+            handle.addEventListener("dblclick", (event) => {
+                if (event.target.closest("button")) return;
+                setCollapsed(!collapsed);
+            });
             handle.addEventListener("pointerdown", (event) => {
+                if (event.target.closest("button")) return;
+                if (collapsed) setCollapsed(false);
                 startY = event.screenY;
                 const workspace = locateWorkspace();
-                if (!workspace) return;
+                if (!workspace?.editorHost) return;
                 startHeight = workspace.editorHost.getBoundingClientRect().height;
                 handle.classList.add("is-dragging");
                 handle.setPointerCapture(event.pointerId);
@@ -3709,7 +4178,11 @@ def render_workspace_resizer(username: str) -> None:
             });
             handle.addEventListener("pointermove", (event) => {
                 if (!handle.hasPointerCapture(event.pointerId)) return;
-                applySplit(startHeight + event.screenY - startY);
+                const workspace = locateWorkspace();
+                if (!workspace) return;
+                const totalHeight = availableHeight(workspace);
+                const nextCodeHeight = startHeight + event.screenY - startY;
+                applyTestcaseHeight(totalHeight - nextCodeHeight);
             });
             const finishDrag = (event) => {
                 if (handle.hasPointerCapture(event.pointerId)) {
@@ -3718,43 +4191,57 @@ def render_workspace_resizer(username: str) -> None:
                 handle.classList.remove("is-dragging");
                 window.parent.document.body.style.removeProperty("cursor");
                 window.parent.document.body.style.removeProperty("user-select");
-                applySplit(codeHeight, true);
+                const workspace = locateWorkspace();
+                if (workspace) {
+                    applyTestcaseHeight(
+                        availableHeight(workspace) - codeHeight,
+                        true
+                    );
+                }
             };
             handle.addEventListener("pointerup", finishDrag);
             handle.addEventListener("pointercancel", finishDrag);
             handle.addEventListener("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    setCollapsed(!collapsed);
+                    event.preventDefault();
+                    return;
+                }
                 if (!["ArrowUp", "ArrowDown"].includes(event.key)) return;
+                if (collapsed) setCollapsed(false);
                 const workspace = locateWorkspace();
                 if (!workspace) return;
-                const delta = event.key === "ArrowUp" ? -.03 : .03;
-                applySplit(
-                    availableHeight(workspace) * (splitRatio + delta),
-                    true
-                );
+                const totalHeight = availableHeight(workspace);
+                const delta = event.key === "ArrowUp" ? 24 : -24;
+                applyTestcaseHeight(totalHeight - codeHeight + delta, true);
                 event.preventDefault();
             });
 
             const workspace = locateWorkspace();
             if (workspace && "ResizeObserver" in window) {
                 columnObserver = new ResizeObserver(() => {
-                    window.requestAnimationFrame(applyRatio);
+                    if (applying) return;
+                    window.requestAnimationFrame(() => autoFit(true));
                 });
                 columnObserver.observe(workspace.column);
             }
-            requestAnimationFrame(applyRatio);
-            window.setTimeout(applyRatio, 120);
-            window.setTimeout(applyRatio, 400);
+            requestAnimationFrame(() => autoFit(true));
+            window.setTimeout(() => autoFit(true), 120);
+            window.setTimeout(() => autoFit(true), 400);
+            window.setTimeout(() => autoFit(true), 900);
         })();
         </script>
     </body>
     </html>
     """
     st.iframe(
-        handle_html.replace("__STORAGE_KEY__", storage_key),
+        handle_html.replace("__RATIO_STORAGE_KEY__", ratio_storage_key).replace(
+            "__COLLAPSED_STORAGE_KEY__",
+            collapsed_storage_key,
+        ).replace("__FORCE_EXPAND__", force_expand_js),
         width="stretch",
-        height=20,
+        height=28,
     )
-
 
 def render_code_workspace(
     username: str,
@@ -3764,6 +4251,12 @@ def render_code_workspace(
     language = LANGUAGE_BY_ID[language_id]
     state_suffix = f"{username}::{problem['id']}::{language_id}"
     draft_key = f"code::{state_suffix}"
+    view_key = f"console_view::{state_suffix}"
+    case_key = f"console_case::{state_suffix}"
+    result_key = f"console_result::{state_suffix}"
+    expand_key = f"console_force_expand::{state_suffix}"
+    st.session_state.setdefault(view_key, "Testcase")
+    st.session_state.setdefault(case_key, 0)
     generated_starter = starter_code(problem, language_id)
     if draft_key not in st.session_state:
         saved_draft = load_draft(username, problem["id"], language_id)
@@ -3840,14 +4333,10 @@ def render_code_workspace(
         save_draft(username, problem["id"], response_text, language_id)
 
     code = st.session_state[draft_key]
+    force_expand = bool(st.session_state.pop(expand_key, False))
     with st.container(key=f"resize_handle::{username}"):
-        render_workspace_resizer(username)
+        render_workspace_resizer(username, force_expand=force_expand)
 
-    view_key = f"console_view::{state_suffix}"
-    case_key = f"console_case::{state_suffix}"
-    result_key = f"console_result::{state_suffix}"
-    st.session_state.setdefault(view_key, "Testcase")
-    st.session_state.setdefault(case_key, 0)
     visible_case_count = min(3, len(problem["tests"]))
 
     with st.container(key=f"testcase_region::{state_suffix}"):
@@ -3934,6 +4423,7 @@ def render_code_workspace(
             "case_index": selected_case,
             "result": result,
         }
+        st.session_state[expand_key] = True
         st.rerun()
 
     if submit_clicked:
@@ -3975,6 +4465,7 @@ def render_code_workspace(
         st.session_state[
             f"independence::{state_suffix}"
         ] = independence
+        st.session_state[expand_key] = True
         st.rerun()
 
 
@@ -3988,6 +4479,30 @@ with st.sidebar:
         key="navigation",
         label_visibility="collapsed",
     )
+
+    if st.session_state.navigation == "Practice":
+        problem_ids = [problem["id"] for problem in PROBLEMS]
+        if st.session_state.current_problem_id not in problem_ids:
+            st.session_state.current_problem_id = problem_ids[0]
+        active_title = PROBLEM_ID_TO_TITLE[st.session_state.current_problem_id]
+        picker_title = st.session_state.get(PROBLEM_PICKER_KEY)
+        if (
+            picker_title not in PROBLEM_TITLE_TO_ID
+            or PROBLEM_TITLE_TO_ID[picker_title]
+            != st.session_state.current_problem_id
+        ):
+            st.session_state[PROBLEM_PICKER_KEY] = active_title
+        st.markdown(
+            '<div class="gc-sidebar-problem-label">Problem</div>',
+            unsafe_allow_html=True,
+        )
+        st.selectbox(
+            "Choose a problem",
+            list(PROBLEM_TITLE_TO_ID),
+            key=PROBLEM_PICKER_KEY,
+            on_change=select_problem_from_picker,
+            label_visibility="collapsed",
+        )
 
     st.divider()
     st.caption("Local MVP runner. Use isolated execution infrastructure before public deployment.")
@@ -4189,37 +4704,10 @@ elif page == "Problem Library":
                 )
 
 else:
-    problem_ids = [problem["id"] for problem in PROBLEMS]
-    if st.session_state.current_problem_id not in problem_ids:
-        st.session_state.current_problem_id = problem_ids[0]
-    active_title = PROBLEM_ID_TO_TITLE[st.session_state.current_problem_id]
-    picker_title = st.session_state.get(PROBLEM_PICKER_KEY)
-    if (
-        picker_title not in PROBLEM_TITLE_TO_ID
-        or PROBLEM_TITLE_TO_ID[picker_title]
-        != st.session_state.current_problem_id
-    ):
-        st.session_state[PROBLEM_PICKER_KEY] = active_title
-
-    with st.container(key="problem_picker_bar"):
-        picker_label_col, picker_input_col = st.columns(
-            [1.4, 4.5],
-            gap="small",
-            vertical_alignment="center",
-        )
-        with picker_label_col:
-            st.markdown(
-                '<div class="gc-problem-picker-label">Choose a problem</div>',
-                unsafe_allow_html=True,
-            )
-        with picker_input_col:
-            st.selectbox(
-                "Choose a problem",
-                list(PROBLEM_TITLE_TO_ID),
-                key=PROBLEM_PICKER_KEY,
-                on_change=select_problem_from_picker,
-                label_visibility="collapsed",
-            )
+    st.markdown(
+        '<div class="gc-practice-workspace-marker" aria-hidden="true"></div>',
+        unsafe_allow_html=True,
+    )
     problem = PROBLEM_BY_ID[st.session_state.current_problem_id]
 
     problem_col, divider_col, code_col = st.columns(
