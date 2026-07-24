@@ -333,6 +333,15 @@ NO_VISUAL_TITLES = {
     "Water Bottles",
     "Word Pattern",
     "Serialize and Deserialize N-ary Tree",
+    "Burst Balloons",
+    "Cherry Pickup",
+    "Cherry Pickup II",
+    "Number of Longest Increasing Subsequence",
+    "Regular Expression Matching",
+    "Scramble String",
+    "Sum of Subarray Minimums",
+    "Tiling a Rectangle with the Fewest Squares",
+    "Wildcard Matching",
 }
 
 GRID_PARAMETER_NAMES = {
@@ -366,9 +375,72 @@ DP_STRING_TITLES = {
     "Edit Distance",
     "Interleaving String",
     "Longest Common Subsequence",
-    "Regular Expression Matching",
-    "Scramble String",
-    "Wildcard Matching",
+}
+
+TREE_OUTPUT_TITLES = {
+    "Construct Binary Tree from Inorder and Postorder Traversal",
+    "Construct Binary Tree from Preorder and Inorder Traversal",
+    "Convert Sorted Array to Binary Search Tree",
+    "Convert Sorted List to Binary Search Tree",
+}
+
+TREE_PAIR_TITLES = {
+    "Leaf-Similar Trees",
+    "Same Tree",
+    "Subtree of Another Tree",
+}
+
+TREE_COMPARE_TITLES = {
+    "Delete Leaves With a Given Value",
+    "Invert Binary Tree",
+    "Recover Binary Search Tree",
+}
+
+TREE_FOREST_TITLES = {
+    "Delete Nodes And Return Forest",
+    "Find Duplicate Subtrees",
+}
+
+TREE_LIST_TITLES = {
+    "Convert Binary Search Tree to Sorted Doubly Linked List",
+    "Flatten Binary Tree to Linked List",
+}
+
+TREE_NODE_RESULT_TITLES = {
+    "Closest Binary Search Tree Value",
+    "Inorder Successor in BST",
+    "Inorder Successor in BST II",
+    "Kth Smallest Element in a BST",
+    "Lowest Common Ancestor of a Binary Search Tree",
+    "Lowest Common Ancestor of a Binary Tree",
+    "Lowest Common Ancestor of a Binary Tree II",
+    "Lowest Common Ancestor of a Binary Tree III",
+}
+
+TREE_TRAVERSAL_TITLES = {
+    "Binary Tree Inorder Traversal",
+    "Binary Tree Postorder Traversal",
+    "Binary Tree Preorder Traversal",
+    "Boundary of Binary Tree",
+}
+
+GRID_COMPARE_TITLES = {
+    "Sudoku Solver",
+    "Walls and Gates",
+}
+
+DP_GRID_TITLES = {
+    "Dungeon Game": "dungeon_dp",
+    "Longest Increasing Path in a Matrix": "matrix_path",
+    "Maximal Rectangle": "matrix_region",
+    "Maximal Square": "matrix_region",
+    "Minimum Falling Path Sum": "matrix_path",
+    "Minimum Path Sum": "matrix_path",
+    "Paint House": "paint_house",
+    "Paint House II": "paint_house",
+    "Triangle": "triangle_path",
+    "Unique Paths": "path_count_grid",
+    "Unique Paths II": "path_count_grid",
 }
 
 STRING_VISUAL_WORDS = {
@@ -778,6 +850,16 @@ def visualization_decision(problem: dict[str, Any]) -> dict[str, Any] | None:
         return {"kind": "queens"}
     if title == "Find the Duplicate Number":
         return {"kind": "sequence_auto", "arg_index": 0}
+    if title == "Maximum Product Subarray":
+        return {"kind": "subarray_result", "arg_index": 0}
+    if title == "House Robber II":
+        return {"kind": "house_circle", "arg_index": 0}
+    if title in {"Jump Game", "Jump Game II"}:
+        return {"kind": "jump_path", "arg_index": 0}
+    if title == "Split Array Largest Sum":
+        return {"kind": "split_array", "arg_index": 0}
+    if title == "Palindrome Partitioning II":
+        return {"kind": "pal_partition", "arg_index": 0}
     if title == "Intersection of Two Linked Lists":
         return {
             "kind": "linked_list",
@@ -785,17 +867,19 @@ def visualization_decision(problem: dict[str, Any]) -> dict[str, Any] | None:
             "grouped": True,
         }
     if title == "Min Cost Climbing Stairs":
-        return {"kind": "sequence_auto", "arg_index": 0}
+        return {"kind": "stair_costs", "arg_index": 0}
     if title == "Best Time to Buy and Sell Stock IV":
         return {"kind": "bars_auto", "arg_index": 1}
-    if title == "Unique Paths":
-        return {"kind": "grid_dimensions", "arg_indexes": [0, 1]}
-    if title == "Triangle":
-        return {"kind": "pyramid_input", "arg_index": 0}
+    if title == "Maximum Profit from Trading Stocks":
+        return {"kind": "paired_bars", "arg_indexes": [0, 1]}
+    if title in DP_GRID_TITLES:
+        decision = {"kind": DP_GRID_TITLES[title]}
+        grid_index = find_parameter_index(names, GRID_PARAMETER_NAMES)
+        if grid_index is not None:
+            decision["arg_index"] = grid_index
+        return decision
     if title == "Knight Dialer":
         return {"kind": "keypad"}
-    if title == "Tiling a Rectangle with the Fewest Squares":
-        return {"kind": "grid_dimensions", "arg_indexes": [0, 1]}
     if title == "Filling Bookcase Shelves":
         return {"kind": "books", "arg_index": 0}
     if title == "Count Unguarded Cells in the Grid":
@@ -810,6 +894,8 @@ def visualization_decision(problem: dict[str, Any]) -> dict[str, Any] | None:
         return {"kind": "fleet"}
     if title == "Find Winner on a Tic Tac Toe Game":
         return {"kind": "tic_tac_toe", "arg_index": 0}
+    if title == "Snakes and Ladders":
+        return {"kind": "snakes_board", "arg_index": 0}
     if title == "Shortest Path to Get All Keys":
         return {"kind": "character_grid", "arg_index": 0}
     if title == "Dot Product of Two Sparse Vectors":
@@ -844,14 +930,40 @@ def visualization_decision(problem: dict[str, Any]) -> dict[str, Any] | None:
         or "BST" in title
     )
     if tree_like and args and isinstance(args[0], list):
-        if title in {
-            "Construct Binary Tree from Inorder and Postorder Traversal",
-            "Construct Binary Tree from Preorder and Inorder Traversal",
-            "Convert Sorted Array to Binary Search Tree",
-            "Convert Sorted List to Binary Search Tree",
-        }:
+        if title in TREE_OUTPUT_TITLES:
             return {"kind": "tree", "source": "expected"}
-        return {"kind": "tree", "arg_index": 0}
+        if title in TREE_PAIR_TITLES and len(args) > 1 and isinstance(args[1], list):
+            return {"kind": "tree_pair", "arg_indexes": [0, 1]}
+        if title == "Merge Two Binary Trees":
+            return {"kind": "tree_merge", "arg_indexes": [0, 1]}
+        if title in TREE_COMPARE_TITLES:
+            return {"kind": "tree_compare", "arg_index": 0}
+        if title in TREE_FOREST_TITLES:
+            return {"kind": "tree_forest", "arg_index": 0}
+        if title in TREE_LIST_TITLES:
+            return {"kind": "tree_list", "arg_index": 0}
+        decision: dict[str, Any] = {"kind": "tree", "arg_index": 0}
+        if title in TREE_NODE_RESULT_TITLES:
+            decision["highlight_result"] = True
+        if title in TREE_TRAVERSAL_TITLES:
+            decision["visit_order"] = True
+        if title.startswith("Lowest Common Ancestor") and len(args) >= 3:
+            decision["target_arg_indexes"] = [1, 2]
+        if title == "All Nodes Distance K in Binary Tree":
+            decision["highlight_result_list"] = True
+            decision["target_arg_indexes"] = [1]
+        if title == "Binary Tree Right Side View":
+            decision["highlight_result_list"] = True
+        if title == "Range Sum of BST":
+            decision["range_arg_indexes"] = [1, 2]
+        if title == "Path Sum II":
+            decision["highlight_first_path"] = True
+        if title in {
+            "Populating Next Right Pointers in Each Node",
+            "Populating Next Right Pointers in Each Node II",
+        }:
+            decision["next_links"] = True
+        return decision
 
     linked_like = "Linked List" in tags or any(
         name in {"head", "l1", "l2", "list1", "list2"} for name in names
@@ -883,14 +995,27 @@ def visualization_decision(problem: dict[str, Any]) -> dict[str, Any] | None:
             and all(isinstance(edge, list) and len(edge) >= 2 for edge in edges)
             and len(edges) <= 24
         ):
-            return {"kind": "graph_auto", "arg_index": graph_index}
+            decision = {"kind": "graph_auto", "arg_index": graph_index}
+            if title == "Clone Graph":
+                decision["adjacency_list"] = True
+            if title in {"Course Schedule II"}:
+                decision["reverse_edges"] = True
+            if title == "Evaluate Division":
+                decision["weight_arg_index"] = 1
+            if title == "Minimum Time to Collect All Apples in a Tree":
+                decision["active_node_arg_index"] = 2
+            if title == "Maximum Path Quality of a Graph":
+                decision["node_value_arg_index"] = 0
+            if names and names[0] in {"n", "numcourses", "num_courses"}:
+                decision["node_count_arg_index"] = 0
+            return decision
 
     grid_index = find_parameter_index(names, GRID_PARAMETER_NAMES)
     if grid_index is not None and grid_index < len(args):
         grid = args[grid_index]
         if is_rectangular_grid(grid):
             compare = (
-                title in TRANSFORMATION_TITLES
+                title in TRANSFORMATION_TITLES | GRID_COMPARE_TITLES
                 and is_rectangular_grid(expected)
                 and len(grid) == len(expected)
                 and len(grid[0]) == len(expected[0])
@@ -902,7 +1027,7 @@ def visualization_decision(problem: dict[str, Any]) -> dict[str, Any] | None:
 
     if title in DP_STRING_TITLES and len(args) >= 2:
         if isinstance(args[0], str) and isinstance(args[1], str):
-            return {"kind": "string_grid", "arg_indexes": [0, 1]}
+            return {"kind": "dp_table", "arg_indexes": [0, 1]}
 
     if args and isinstance(args[0], str):
         if any(word in title for word in STRING_VISUAL_WORDS):

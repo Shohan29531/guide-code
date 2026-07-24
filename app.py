@@ -513,6 +513,17 @@ st.markdown(
         background: #e7f7ed;
         border-color: #91cda8;
     }
+    .gc-vis-grid-cell.is-water {
+        background: #f8fafc;
+        border-color: #e4e8ee;
+        color: #98a2b3;
+    }
+    .gc-vis-grid-cell.box-right {
+        border-right: 3px solid #7d8998;
+    }
+    .gc-vis-grid-cell.box-bottom {
+        border-bottom: 3px solid #7d8998;
+    }
     .gc-vis-compare {
         align-items: center;
         display: flex;
@@ -795,6 +806,21 @@ st.markdown(
         right: 0;
         top: -3px;
     }
+    .gc-vis-graph-edge-label {
+        background: #fff;
+        border: 1px solid #d8dee8;
+        border-radius: 3px;
+        color: #344054;
+        font-family: SFMono-Regular, Consolas, monospace;
+        font-size: .58rem;
+        left: 50%;
+        line-height: 1;
+        padding: .12rem .2rem;
+        position: absolute;
+        top: 50%;
+        white-space: nowrap;
+        z-index: 3;
+    }
     .gc-vis-graph-node {
         align-items: center;
         background: #f3f5f8;
@@ -816,6 +842,19 @@ st.markdown(
         background: #e7efff;
         border-color: #2f6fed;
         color: #173b78;
+    }
+    .gc-vis-graph-node b {
+        font: inherit;
+    }
+    .gc-vis-graph-node small {
+        color: #526071;
+        font-size: .57rem;
+        font-weight: 600;
+        left: 50%;
+        position: absolute;
+        top: 1.82rem;
+        transform: translateX(-50%);
+        white-space: nowrap;
     }
     .gc-vis-houses {
         align-items: flex-end;
@@ -867,6 +906,40 @@ st.markdown(
         color: #667085;
         font-size: .65rem;
         margin-top: .16rem;
+    }
+    .gc-vis-house-circle {
+        border: 1px dashed #c5ccd6;
+        border-radius: 50%;
+        height: 9.5rem;
+        margin: .2rem 0 .35rem .3rem;
+        position: relative;
+        width: 9.5rem;
+    }
+    .gc-vis-circle-house {
+        align-items: center;
+        background: #f3f5f8;
+        border: 1px solid #aeb8c6;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        height: 2rem;
+        justify-content: center;
+        position: absolute;
+        transform: translate(-50%, -50%);
+        width: 2rem;
+    }
+    .gc-vis-circle-house.is-active {
+        background: #e7efff;
+        border-color: #4c7dd9;
+        color: #173b78;
+    }
+    .gc-vis-circle-house b {
+        font-family: SFMono-Regular, Consolas, monospace;
+        font-size: .7rem;
+    }
+    .gc-vis-circle-house small {
+        color: #667085;
+        font-size: .5rem;
     }
     .gc-vis-decodings {
         align-items: center;
@@ -1029,6 +1102,24 @@ st.markdown(
         transform-origin: left center;
         z-index: 1;
     }
+    .gc-vis-tree-next-link {
+        border-top: 1px dashed #c58b2b;
+        color: #9a6700;
+        font-size: .85rem;
+        font-weight: 800;
+        height: 1px;
+        line-height: 0;
+        position: absolute;
+        text-align: right;
+        z-index: 1;
+    }
+    .gc-vis-list-loop {
+        color: #667085;
+        display: block;
+        font-size: .68rem;
+        font-weight: 700;
+        margin-top: .35rem;
+    }
     .gc-vis-tree-node {
         align-items: center;
         background: #f3f5f8;
@@ -1050,6 +1141,53 @@ st.markdown(
         background: #e7efff;
         border-color: #4c7dd9;
         color: #173b78;
+    }
+    .gc-vis-tree-node.is-target {
+        background: #fff1e7;
+        border-color: #e99554;
+        color: #873800;
+    }
+    .gc-vis-tree-node.is-active.is-target {
+        box-shadow: 0 0 0 3px #f7c49d;
+    }
+    .gc-vis-tree-node > small {
+        align-items: center;
+        background: #2f6fed;
+        border: 1px solid #fff;
+        border-radius: 50%;
+        color: #fff;
+        display: flex;
+        font-size: .5rem;
+        height: .85rem;
+        justify-content: center;
+        position: absolute;
+        right: -.38rem;
+        top: -.4rem;
+        width: .85rem;
+    }
+    .gc-vis-tree-collection {
+        align-items: start;
+        display: flex;
+        flex-wrap: wrap;
+        gap: .65rem;
+        max-width: 100%;
+    }
+    .gc-vis-tree-list {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: .8rem;
+        max-width: 100%;
+    }
+    .gc-vis-tree-list > div {
+        min-width: 0;
+    }
+    .gc-vis-tree-panel {
+        flex: 1 1 14rem;
+        min-width: 0;
+    }
+    .gc-vis-tree-panel .gc-vis-tree {
+        max-width: 22rem;
     }
     .gc-vis-empty {
         color: #667085;
@@ -1126,6 +1264,41 @@ st.markdown(
         background: #f3f5f8;
         border: 1px solid #e0e5ec;
     }
+    .gc-vis-dp-table-wrap {
+        max-width: 100%;
+        overflow: hidden;
+    }
+    .gc-vis-dp-table {
+        border-collapse: separate;
+        border-spacing: 2px;
+        font-family: SFMono-Regular, Consolas, monospace;
+        table-layout: fixed;
+        width: auto;
+    }
+    .gc-vis-dp-table th,
+    .gc-vis-dp-table td {
+        border: 0;
+        font-size: .65rem;
+        height: 1.65rem;
+        min-width: 1.65rem;
+        padding: 0 .15rem;
+        text-align: center;
+    }
+    .gc-vis-dp-table th {
+        color: #526071;
+        font-weight: 700;
+    }
+    .gc-vis-dp-table td {
+        background: #f3f5f8;
+        border: 1px solid #e0e5ec;
+        color: #344054;
+    }
+    .gc-vis-dp-table td.is-active {
+        background: #e7efff;
+        border-color: #4c7dd9;
+        color: #173b78;
+        font-weight: 800;
+    }
     .gc-vis-pyramid {
         display: grid;
         gap: .22rem;
@@ -1149,6 +1322,12 @@ st.markdown(
         justify-content: center;
         min-width: 1.7rem;
         padding: 0 .18rem;
+    }
+    .gc-vis-pyramid-row span.is-active {
+        background: #e7efff;
+        border-color: #4c7dd9;
+        color: #173b78;
+        font-weight: 800;
     }
     .gc-vis-rectangles {
         height: 145px;
@@ -1266,14 +1445,20 @@ st.markdown(
         transform: translateX(-50%);
     }
     .gc-vis-books {
-        align-items: end;
-        display: flex;
-        gap: 2px;
-        height: 112px;
+        display: grid;
+        gap: .45rem;
         max-width: 34rem;
         width: 100%;
     }
-    .gc-vis-books > span {
+    .gc-vis-book-shelf {
+        align-items: end;
+        border-bottom: 3px solid #98a2b3;
+        display: flex;
+        gap: 2px;
+        min-height: 68px;
+        padding: 0 .2rem;
+    }
+    .gc-vis-book-shelf > span {
         align-items: center;
         background: #e7efff;
         border: 1px solid #8eb0ee;
@@ -1284,17 +1469,50 @@ st.markdown(
         min-width: .65rem;
         position: relative;
     }
-    .gc-vis-books b {
+    .gc-vis-book-shelf b {
         color: #173b78;
         font-size: .62rem;
     }
-    .gc-vis-books small {
+    .gc-vis-book-shelf small {
         bottom: -1rem;
         color: #667085;
         font-size: .52rem;
         left: 50%;
         position: absolute;
         transform: translateX(-50%);
+        white-space: nowrap;
+    }
+    .gc-vis-cost-stairs {
+        align-items: end;
+        display: flex;
+        gap: .28rem;
+        max-width: 32rem;
+        min-height: 96px;
+        width: 100%;
+    }
+    .gc-vis-cost-step {
+        align-items: center;
+        display: flex;
+        flex: 1 1 0;
+        flex-direction: column;
+        max-width: 3.2rem;
+    }
+    .gc-vis-cost-step > span {
+        align-items: center;
+        background: #e7efff;
+        border: 1px solid #8eb0ee;
+        border-radius: 3px 3px 0 0;
+        color: #173b78;
+        display: flex;
+        font-family: SFMono-Regular, Consolas, monospace;
+        font-size: .68rem;
+        justify-content: center;
+        width: 72%;
+    }
+    .gc-vis-cost-step small {
+        color: #667085;
+        font-size: .56rem;
+        margin-top: .15rem;
         white-space: nowrap;
     }
     .gc-vis-trips {
@@ -1716,6 +1934,15 @@ st.markdown(
     }
     .gc-problem-bar-spacer {
         height: 1.65rem;
+    }
+    .gc-problem-pane-anchor {
+        display: none;
+    }
+    [data-testid="stElementContainer"]:has(.gc-problem-pane-anchor) {
+        height: 0 !important;
+        margin: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
     }
     [data-testid="stHorizontalBlock"]:has(.gc-code-bar-marker):not(:has(.gc-problem-pane-marker))
     [data-testid="stSelectbox"] {
@@ -3976,24 +4203,12 @@ else:
     )
 
     with problem_col:
-        problem_bar_title, problem_bar_spacer = st.columns(
-            [4.5, 1.2],
-            gap=None,
-            vertical_alignment="center",
-        )
-        with problem_bar_title:
-            st.markdown(
-                """
-                <div class="gc-problem-bar-marker gc-problem-pane-marker">
-                    <span class="gc-pane-title">Problem</span>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with problem_bar_spacer:
-            st.markdown(
-                '<div class="gc-problem-bar-spacer" aria-hidden="true"></div>',
-                unsafe_allow_html=True,
+        st.markdown(
+            (
+                '<div class="gc-problem-pane-marker gc-problem-pane-anchor" '
+                'aria-hidden="true"></div>'
+            ),
+            unsafe_allow_html=True,
         )
         render_problem_header(problem)
         st.markdown(problem["description"])

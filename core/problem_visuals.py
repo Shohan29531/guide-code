@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import ast
+from collections import deque
 from html import escape
+from heapq import heappop, heappush
 from math import atan2, cos, hypot, sin
 from typing import Any
 
@@ -475,11 +477,14 @@ def _intervals(spec: dict[str, Any]) -> str:
 
 def _graph(spec: dict[str, Any]) -> str:
     nodes = spec["nodes"]
-    active_edges = {tuple(edge) for edge in spec.get("active_edges", [])}
+    active_edges = {tuple(edge[:2]) for edge in spec.get("active_edges", [])}
     active_nodes = set(spec.get("active_nodes", []))
+    node_annotations = spec.get("node_annotations", {})
     directed = bool(spec.get("directed"))
     edges = []
-    for start, end in spec["edges"]:
+    for edge in spec["edges"]:
+        start, end = edge[:2]
+        edge_label = edge[2] if len(edge) > 2 else None
         x1, y1 = nodes[start]
         x2, y2 = nodes[end]
         dx = x2 - x1
@@ -492,18 +497,26 @@ def _graph(spec: dict[str, Any]) -> str:
             length = max(1, length - 4.5)
         class_name = _classes(
             "gc-vis-graph-edge",
-            "is-active" if (start, end) in active_edges or (end, start) in active_edges else None,
+            "is-active"
+            if (start, end) in active_edges
+            or (not directed and (end, start) in active_edges)
+            else None,
             "is-directed" if directed else None,
         )
         edges.append(
             f'<div class="{class_name}" style="left:{x1}%;top:{y1}%;'
-            f'width:{length:.2f}%;transform:rotate({angle:.2f}deg)"></div>'
+            f'width:{length:.2f}%;transform:rotate({angle:.2f}deg)">'
+            f'{f"""<span class="gc-vis-graph-edge-label" style="transform:translate(-50%,-50%) rotate({-angle:.2f}deg)">{escape(str(edge_label))}</span>""" if edge_label is not None else ""}'
+            "</div>"
         )
     node_html = []
     for node, (x, y) in nodes.items():
+        annotation = node_annotations.get(node)
         node_html.append(
             f'<div class="gc-vis-graph-node {"is-active" if node in active_nodes else ""}" '
-            f'style="left:{x}%;top:{y}%">{escape(str(node))}</div>'
+            f'style="left:{x}%;top:{y}%"><b>{escape(str(node))}</b>'
+            f'{f"<small>{escape(str(annotation))}</small>" if annotation is not None else ""}'
+            "</div>"
         )
     return f'<div class="gc-vis-graph">{"".join(edges)}{"".join(node_html)}</div>'
 
@@ -520,6 +533,26 @@ def _houses(spec: dict[str, Any]) -> str:
             "</div>"
         )
     return f'<div class="gc-vis-houses">{"".join(houses)}</div>'
+
+
+def _house_circle(spec: dict[str, Any]) -> str:
+    values = spec["values"]
+    active = set(spec.get("active", []))
+    count = max(1, len(values))
+    rendered = []
+    for index, value in enumerate(values):
+        angle = -1.5708 + index * 6.283185307179586 / count
+        x = 50 + 38 * cos(angle)
+        y = 50 + 38 * sin(angle)
+        rendered.append(
+            f'<span class="gc-vis-circle-house {"is-active" if index in active else ""}" '
+            f'style="left:{x:.2f}%;top:{y:.2f}%"><b>{escape(str(value))}</b>'
+            f"<small>{index}</small></span>"
+        )
+    return (
+        '<div class="gc-vis-house-circle">'
+        f'{"".join(rendered)}<span class="gc-vis-circle-link"></span></div>'
+    )
 
 
 def _decodings(spec: dict[str, Any]) -> str:
@@ -560,7 +593,11 @@ def _sequence_compare(spec: dict[str, Any]) -> str:
     )
 
 
-def _linked_list_row(values: list[Any], tone: str = "") -> str:
+def _linked_list_row(
+    values: list[Any],
+    tone: str = "",
+    arrow: str = "→",
+) -> str:
     nodes = []
     for index, value in enumerate(values[:14]):
         shown = value[0] if isinstance(value, list) and value else value
@@ -575,7 +612,10 @@ def _linked_list_row(values: list[Any], tone: str = "") -> str:
             "</span>"
         )
         if index < min(len(values), 14) - 1:
-            nodes.append('<span class="gc-vis-list-arrow" aria-hidden="true">→</span>')
+            nodes.append(
+                '<span class="gc-vis-list-arrow" aria-hidden="true">'
+                f"{escape(arrow)}</span>"
+            )
     if len(values) > 14:
         nodes.append('<span class="gc-vis-list-more">…</span>')
     return f'<div class="gc-vis-linked-row">{"".join(nodes)}</div>'
@@ -634,42 +674,270 @@ def _compact_value(value: Any) -> str:
     return rendered if len(rendered) <= 34 else rendered[:31] + "…"
 
 
-def _tree(spec: dict[str, Any]) -> str:
-    values = list(spec["values"])[:31]
+def _parse_tree_nodes(values: list[Any]) -> list[dict[str, Any]]:
+    values = list(values)[:31]
     if not values or values[0] is None:
-        return '<div class="gc-vis-empty">empty tree</div>'
-
-    nodes: list[dict[str, Any]] = [{"value": values[0], "depth": 0}]
-    edges: list[tuple[int, int]] = []
+        return []
+    nodes: list[dict[str, Any]] = [
+        {"value": values[0], "depth": 0, "slot": 0, "parent": None}
+    ]
     queue = [0]
     value_index = 1
     while queue and value_index < len(values):
-        parent = queue.pop(0)
-        for _ in range(2):
+        parent_index = queue.pop(0)
+        parent = nodes[parent_index]
+        for child_offset in range(2):
             if value_index >= len(values):
                 break
             value = values[value_index]
             value_index += 1
             if value is None:
                 continue
-            child = len(nodes)
-            nodes.append({"value": value, "depth": nodes[parent]["depth"] + 1})
-            edges.append((parent, child))
-            queue.append(child)
+            child_index = len(nodes)
+            nodes.append(
+                {
+                    "value": value,
+                    "depth": parent["depth"] + 1,
+                    "slot": parent["slot"] * 2 + child_offset + 1,
+                    "parent": parent_index,
+                }
+            )
+            queue.append(child_index)
+    return nodes
 
-    levels: dict[int, list[int]] = {}
+
+def _tree_value_order(values: list[Any], ordered_values: list[Any]) -> dict[int, int]:
+    nodes = _parse_tree_nodes(values)
+    unused = set(range(len(nodes)))
+    badges: dict[int, int] = {}
+    for order, value in enumerate(ordered_values, start=1):
+        match = next(
+            (
+                index
+                for index, node in enumerate(nodes)
+                if index in unused and node["value"] == value
+            ),
+            None,
+        )
+        if match is None:
+            continue
+        unused.remove(match)
+        badges[match] = order
+    return badges
+
+
+def _tree_path_indices(values: list[Any], path_values: list[Any]) -> list[int]:
+    nodes = _parse_tree_nodes(values)
+    if not nodes or not path_values or nodes[0]["value"] != path_values[0]:
+        return []
+
+    children: dict[int, list[int]] = {}
     for index, node in enumerate(nodes):
-        levels.setdefault(node["depth"], []).append(index)
-    max_depth = max(levels)
+        if node["parent"] is not None:
+            children.setdefault(node["parent"], []).append(index)
+
+    def visit(node_index: int, path_index: int) -> list[int] | None:
+        if nodes[node_index]["value"] != path_values[path_index]:
+            return None
+        if path_index == len(path_values) - 1:
+            return [node_index]
+        for child in children.get(node_index, []):
+            suffix = visit(child, path_index + 1)
+            if suffix:
+                return [node_index, *suffix]
+        return None
+
+    return visit(0, 0) or []
+
+
+def _tree_index_path(nodes: list[dict[str, Any]], end: int) -> list[int]:
+    path = [end]
+    while nodes[path[-1]]["parent"] is not None:
+        path.append(nodes[path[-1]]["parent"])
+    return list(reversed(path))
+
+
+def _tree_path_between(
+    nodes: list[dict[str, Any]],
+    first: int,
+    second: int,
+) -> list[int]:
+    first_path = _tree_index_path(nodes, first)
+    second_path = _tree_index_path(nodes, second)
+    split = 0
+    while (
+        split < min(len(first_path), len(second_path))
+        and first_path[split] == second_path[split]
+    ):
+        split += 1
+    return [
+        *reversed(first_path[split:]),
+        first_path[split - 1],
+        *second_path[split:],
+    ]
+
+
+def _tree_depth_path(values: list[Any], shortest: bool = False) -> list[int]:
+    nodes = _parse_tree_nodes(values)
+    parent_indexes = {
+        node["parent"] for node in nodes if node["parent"] is not None
+    }
+    leaves = [index for index in range(len(nodes)) if index not in parent_indexes]
+    if not leaves:
+        return []
+    end = min(
+        leaves,
+        key=lambda index: nodes[index]["depth"],
+    ) if shortest else max(
+        leaves,
+        key=lambda index: nodes[index]["depth"],
+    )
+    return _tree_index_path(nodes, end)
+
+
+def _tree_diameter_path(values: list[Any]) -> list[int]:
+    nodes = _parse_tree_nodes(values)
+    if not nodes:
+        return []
+    best: list[int] = [0]
+    for first in range(len(nodes)):
+        for second in range(first, len(nodes)):
+            candidate = _tree_path_between(nodes, first, second)
+            if len(candidate) > len(best):
+                best = candidate
+    return best
+
+
+def _tree_maximum_sum_path(values: list[Any]) -> list[int]:
+    nodes = _parse_tree_nodes(values)
+    best: list[int] = []
+    best_sum: int | float | None = None
+    for first in range(len(nodes)):
+        for second in range(first, len(nodes)):
+            candidate = _tree_path_between(nodes, first, second)
+            if not all(
+                isinstance(nodes[index]["value"], (int, float))
+                for index in candidate
+            ):
+                continue
+            total = sum(nodes[index]["value"] for index in candidate)
+            if best_sum is None or total > best_sum:
+                best_sum = total
+                best = candidate
+    return best
+
+
+def _tree_good_node_indices(values: list[Any]) -> list[int]:
+    nodes = _parse_tree_nodes(values)
+    good = []
+    for index, node in enumerate(nodes):
+        path = _tree_index_path(nodes, index)
+        if node["value"] >= max(nodes[ancestor]["value"] for ancestor in path):
+            good.append(index)
+    return good
+
+
+def _tree_sum_path(
+    values: list[Any],
+    target: int | float,
+    root_to_leaf: bool,
+) -> list[int]:
+    nodes = _parse_tree_nodes(values)
+    parent_indexes = {
+        node["parent"] for node in nodes if node["parent"] is not None
+    }
+    for end in range(len(nodes)):
+        if root_to_leaf and end in parent_indexes:
+            continue
+        path = _tree_index_path(nodes, end)
+        candidates = [path] if root_to_leaf else [path[start:] for start in range(len(path))]
+        for candidate in candidates:
+            if sum(nodes[index]["value"] for index in candidate) == target:
+                return candidate
+    return []
+
+
+def _tree_average_match_indices(values: list[Any]) -> list[int]:
+    nodes = _parse_tree_nodes(values)
+    children: dict[int, list[int]] = {}
+    for index, node in enumerate(nodes):
+        if node["parent"] is not None:
+            children.setdefault(node["parent"], []).append(index)
+    matches = []
+
+    def total(node_index: int) -> tuple[int | float, int]:
+        subtotal = nodes[node_index]["value"]
+        count = 1
+        for child in children.get(node_index, []):
+            child_total, child_count = total(child)
+            subtotal += child_total
+            count += child_count
+        if subtotal // count == nodes[node_index]["value"]:
+            matches.append(node_index)
+        return subtotal, count
+
+    if nodes:
+        total(0)
+    return matches
+
+
+def _tree_even_grandparent_indices(values: list[Any]) -> list[int]:
+    nodes = _parse_tree_nodes(values)
+    matches = []
+    for index, node in enumerate(nodes):
+        parent = node["parent"]
+        grandparent = nodes[parent]["parent"] if parent is not None else None
+        if (
+            grandparent is not None
+            and isinstance(nodes[grandparent]["value"], int)
+            and nodes[grandparent]["value"] % 2 == 0
+        ):
+            matches.append(index)
+    return matches
+
+
+def _tree_removal_rounds(values: list[Any]) -> dict[int, int]:
+    nodes = _parse_tree_nodes(values)
+    children: dict[int, list[int]] = {}
+    for index, node in enumerate(nodes):
+        if node["parent"] is not None:
+            children.setdefault(node["parent"], []).append(index)
+    rounds: dict[int, int] = {}
+
+    def visit(node_index: int) -> int:
+        round_number = 1 + max(
+            (visit(child) for child in children.get(node_index, [])),
+            default=0,
+        )
+        rounds[node_index] = round_number
+        return round_number
+
+    if nodes:
+        visit(0)
+    return rounds
+
+
+def _tree(spec: dict[str, Any]) -> str:
+    values = list(spec["values"])[:31]
+    nodes = _parse_tree_nodes(values)
+    if not nodes:
+        return '<div class="gc-vis-empty">empty tree</div>'
+
+    max_depth = max(node["depth"] for node in nodes)
     positions: dict[int, tuple[float, float]] = {}
-    for depth, indexes in levels.items():
-        for order, node_index in enumerate(indexes):
-            x = 8 + (order + 1) / (len(indexes) + 1) * 84
-            y = 9 + depth / max(1, max_depth) * 75
-            positions[node_index] = (x, y)
+    for index, node in enumerate(nodes):
+        depth = node["depth"]
+        first_slot = 2**depth - 1
+        position_in_level = node["slot"] - first_slot
+        x = 4 + (position_in_level + .5) / (2**depth) * 92
+        y = 10 + depth / max(1, max_depth) * 72
+        positions[index] = (x, y)
 
     edge_html = []
-    for parent, child in edges:
+    for child, node in enumerate(nodes):
+        parent = node["parent"]
+        if parent is None:
+            continue
         x1, y1 = positions[parent]
         x2, y2 = positions[child]
         dx = x2 - x1
@@ -680,13 +948,47 @@ def _tree(spec: dict[str, Any]) -> str:
             f'<span class="gc-vis-tree-edge" style="left:{x1:.2f}%;top:{y1:.2f}%;'
             f'width:{length:.2f}%;transform:rotate({angle:.2f}deg)"></span>'
         )
+    if spec.get("next_links"):
+        for depth in range(max_depth + 1):
+            level = sorted(
+                (
+                    index for index, node in enumerate(nodes)
+                    if node["depth"] == depth
+                ),
+                key=lambda index: positions[index][0],
+            )
+            for first, second in zip(level, level[1:]):
+                x1, y1 = positions[first]
+                x2, _ = positions[second]
+                edge_html.append(
+                    '<span class="gc-vis-tree-next-link" '
+                    f'style="left:{x1 + 2:.2f}%;top:{y1:.2f}%;'
+                    f'width:{max(0, x2 - x1 - 4):.2f}%">→</span>'
+                )
     active_values = set(spec.get("active_values", []))
-    node_html = [
-        f'<span class="gc-vis-tree-node {"is-active" if node["value"] in active_values else ""}" '
-        f'style="left:{positions[index][0]:.2f}%;top:{positions[index][1]:.2f}%">'
-        f'{escape(str(node["value"]))}</span>'
-        for index, node in enumerate(nodes)
-    ]
+    target_values = set(spec.get("target_values", []))
+    active_indices = set(spec.get("active_indices", []))
+    target_indices = set(spec.get("target_indices", []))
+    badges = spec.get("badges", {})
+    node_html = []
+    for index, node in enumerate(nodes):
+        class_name = _classes(
+            "gc-vis-tree-node",
+            "is-active"
+            if index in active_indices or node["value"] in active_values
+            else None,
+            "is-target"
+            if index in target_indices or node["value"] in target_values
+            else None,
+        )
+        badge = badges.get(index)
+        node_html.append(
+            f'<span class="{class_name}" '
+            f'style="left:{positions[index][0]:.2f}%;top:{positions[index][1]:.2f}%">'
+            f'{escape(str(node["value"]))}'
+            f'{f"<small>{escape(str(badge))}</small>" if badge is not None else ""}'
+            "</span>"
+        )
     height = 92 + max_depth * 30
     return (
         f'<div class="gc-vis-tree" style="height:{height}px">'
@@ -694,32 +996,174 @@ def _tree(spec: dict[str, Any]) -> str:
     )
 
 
+def _tree_collection(spec: dict[str, Any]) -> str:
+    panels = []
+    for item in spec["trees"]:
+        panels.append(
+            '<div class="gc-vis-tree-panel">'
+            f'<span class="gc-vis-side-label">{escape(item["label"])}</span>'
+            f'{_tree(item)}</div>'
+        )
+    return f'<div class="gc-vis-tree-collection">{"".join(panels)}</div>'
+
+
+def _tree_list_compare(spec: dict[str, Any]) -> str:
+    output = [value for value in spec["output"] if value is not None]
+    circular = spec.get("circular", False)
+    output_row = _linked_list_row(
+        output,
+        "is-result",
+        "↔" if circular else "→",
+    )
+    if circular:
+        output_row += (
+            '<span class="gc-vis-list-loop">'
+            "last ↔ first</span>"
+        )
+    return (
+        '<div class="gc-vis-tree-list">'
+        '<div class="gc-vis-tree-panel">'
+        '<span class="gc-vis-side-label">input tree</span>'
+        f'{_tree({"values": spec["input"]})}</div>'
+        '<div class="gc-vis-arrow" aria-hidden="true">→</div>'
+        '<div><span class="gc-vis-side-label">'
+        f'{escape(spec.get("output_label", "expected list"))}</span>'
+        f"{output_row}</div>"
+        "</div>"
+    )
+
+
 def _graph_auto(spec: dict[str, Any]) -> str:
     raw_edges = spec["edges"][:24]
-    labels = []
+    labels = list(spec.get("node_labels", []))
     for edge in raw_edges:
         for value in edge[:2]:
             if value not in labels:
                 labels.append(value)
     labels = labels[:16]
-    count = max(1, len(labels))
-    nodes = {}
-    for index, label in enumerate(labels):
-        angle = -1.5708 + index * 6.283185307179586 / count
-        nodes[label] = (
-            50 + 39 * cos(angle),
-            50 + 36 * sin(angle),
-        )
     edges = [
-        (edge[0], edge[1])
+        tuple(edge)
         for edge in raw_edges
-        if edge[0] in nodes and edge[1] in nodes
+        if edge[0] in labels and edge[1] in labels
     ]
+    pair_edges = [(edge[0], edge[1]) for edge in edges]
+    directed = spec.get("directed", False)
+    nodes: dict[Any, tuple[float, float]] = {}
+
+    adjacency = {label: [] for label in labels}
+    for first, second in pair_edges:
+        if second not in adjacency[first]:
+            adjacency[first].append(second)
+        if first not in adjacency[second]:
+            adjacency[second].append(first)
+    connected = not labels
+    if labels:
+        visited = {labels[0]}
+        stack = [labels[0]]
+        while stack:
+            node = stack.pop()
+            for neighbor in adjacency[node]:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    stack.append(neighbor)
+        connected = len(visited) == len(labels)
+    is_tree = connected and len(pair_edges) == max(0, len(labels) - 1)
+
+    if is_tree and labels:
+        directed_roots = (
+            [
+                label for label in labels
+                if all(second != label for _, second in pair_edges)
+            ]
+            if directed
+            else []
+        )
+        root = (
+            directed_roots[0]
+            if directed_roots
+            else 0 if 0 in labels
+            else labels[0]
+        )
+        children: dict[Any, list[Any]] = {}
+        depths = {root: 0}
+
+        def build(node: Any, parent: Any | None) -> None:
+            children[node] = [
+                neighbor for neighbor in adjacency[node]
+                if neighbor != parent
+            ]
+            for child in children[node]:
+                depths[child] = depths[node] + 1
+                build(child, node)
+
+        build(root, None)
+        raw_x: dict[Any, float] = {}
+        next_leaf = 0
+
+        def place(node: Any) -> float:
+            nonlocal next_leaf
+            child_positions = [place(child) for child in children[node]]
+            if child_positions:
+                raw_x[node] = sum(child_positions) / len(child_positions)
+            else:
+                raw_x[node] = float(next_leaf)
+                next_leaf += 1
+            return raw_x[node]
+
+        place(root)
+        x_span = max(1.0, max(raw_x.values()) - min(raw_x.values()))
+        max_depth = max(depths.values(), default=0)
+        for label in labels:
+            nodes[label] = (
+                10 + (raw_x[label] - min(raw_x.values())) / x_span * 80,
+                12 + depths[label] / max(1, max_depth) * 76,
+            )
+    elif directed and labels:
+        outgoing = {label: [] for label in labels}
+        indegree = {label: 0 for label in labels}
+        for first, second in pair_edges:
+            if second not in outgoing[first]:
+                outgoing[first].append(second)
+                indegree[second] += 1
+        queue = deque(label for label in labels if indegree[label] == 0)
+        levels = {label: 0 for label in queue}
+        processed = []
+        while queue:
+            node = queue.popleft()
+            processed.append(node)
+            for neighbor in outgoing[node]:
+                levels[neighbor] = max(levels.get(neighbor, 0), levels[node] + 1)
+                indegree[neighbor] -= 1
+                if indegree[neighbor] == 0:
+                    queue.append(neighbor)
+        if len(processed) == len(labels):
+            max_level = max(levels.values(), default=0)
+            for level in range(max_level + 1):
+                level_nodes = [label for label in labels if levels[label] == level]
+                for index, label in enumerate(level_nodes):
+                    nodes[label] = (
+                        50
+                        if len(level_nodes) == 1
+                        else 10 + index / (len(level_nodes) - 1) * 80,
+                        12 + level / max(1, max_level) * 76,
+                    )
+
+    if not nodes:
+        count = max(1, len(labels))
+        for index, label in enumerate(labels):
+            angle = -1.5708 + index * 6.283185307179586 / count
+            nodes[label] = (
+                50 + 39 * cos(angle),
+                50 + 36 * sin(angle),
+            )
     return _graph(
         {
             "nodes": nodes,
             "edges": edges,
-            "directed": spec.get("directed", False),
+            "directed": directed,
+            "active_edges": spec.get("active_edges", []),
+            "active_nodes": spec.get("active_nodes", []),
+            "node_annotations": spec.get("node_annotations", {}),
         }
     )
 
@@ -782,12 +1226,42 @@ def _string_grid(spec: dict[str, Any]) -> str:
     )
 
 
-def _pyramid(spec: dict[str, Any]) -> str:
+def _dp_table(spec: dict[str, Any]) -> str:
+    top_labels = spec["top_labels"]
+    side_labels = spec["side_labels"]
+    values = spec["values"]
+    active = set(spec.get("active", []))
+    header = '<th class="gc-vis-dp-corner"></th>' + "".join(
+        f"<th>{escape(str(label))}</th>" for label in top_labels
+    )
     rows = []
-    for row in spec["rows"][:8]:
+    for row_index, row in enumerate(values):
+        cells = "".join(
+            f'<td class="{"is-active" if (row_index, column_index) in active else ""}">'
+            f'{escape("✓" if value is True else "·" if value is False else str(value))}</td>'
+            for column_index, value in enumerate(row)
+        )
+        rows.append(
+            f"<tr><th>{escape(str(side_labels[row_index]))}</th>{cells}</tr>"
+        )
+    return (
+        '<div class="gc-vis-dp-table-wrap"><table class="gc-vis-dp-table">'
+        f"<thead><tr>{header}</tr></thead><tbody>{''.join(rows)}</tbody>"
+        "</table></div>"
+    )
+
+
+def _pyramid(spec: dict[str, Any]) -> str:
+    active = set(spec.get("active", []))
+    rows = []
+    for row_index, row in enumerate(spec["rows"][:8]):
         rows.append(
             '<div class="gc-vis-pyramid-row">'
-            + "".join(f"<span>{escape(str(value))}</span>" for value in row)
+            + "".join(
+                f'<span class="{"is-active" if (row_index, column_index) in active else ""}">'
+                f"{escape(str(value))}</span>"
+                for column_index, value in enumerate(row)
+            )
             + "</div>"
         )
     return f'<div class="gc-vis-pyramid">{"".join(rows)}</div>'
@@ -855,16 +1329,37 @@ def _paired_bars(spec: dict[str, Any]) -> str:
 
 def _books(spec: dict[str, Any]) -> str:
     books = spec["books"][:14]
+    shelves = spec.get("shelves") or [books]
     max_height = max((book[1] for book in books), default=1)
-    total_width = max(sum(book[0] for book in books), 1)
-    rendered = []
-    for index, (thickness, height, *_) in enumerate(books):
-        rendered.append(
-            f'<span style="height:{max(18, height / max_height * 88):.2f}px;'
-            f'width:{max(6, thickness / total_width * 100):.2f}%">'
-            f'<b>{index}</b><small>{thickness} × {height}</small></span>'
+    shelf_width = max(spec.get("shelf_width", 0), 1)
+    rendered_shelves = []
+    book_index = 0
+    for shelf in shelves:
+        rendered = []
+        for thickness, height, *_ in shelf:
+            rendered.append(
+                f'<span style="height:{max(18, height / max_height * 62):.2f}px;'
+                f'width:{max(6, thickness / shelf_width * 100):.2f}%">'
+                f'<b>{book_index}</b><small>{thickness} × {height}</small></span>'
+            )
+            book_index += 1
+        rendered_shelves.append(
+            f'<div class="gc-vis-book-shelf">{"".join(rendered)}</div>'
         )
-    return f'<div class="gc-vis-books">{"".join(rendered)}</div>'
+    return f'<div class="gc-vis-books">{"".join(rendered_shelves)}</div>'
+
+
+def _stair_costs(spec: dict[str, Any]) -> str:
+    costs = spec["costs"]
+    maximum = max(costs) or 1
+    steps = []
+    for index, cost in enumerate(costs[:14]):
+        steps.append(
+            '<div class="gc-vis-cost-step">'
+            f'<span style="height:{max(22, cost / maximum * 72):.2f}px">{escape(str(cost))}</span>'
+            f"<small>step {index}</small></div>"
+        )
+    return f'<div class="gc-vis-cost-stairs">{"".join(steps)}</div>'
 
 
 def _trips(spec: dict[str, Any]) -> str:
@@ -906,13 +1401,19 @@ def _buildings(spec: dict[str, Any]) -> str:
 def _matrix_pair(spec: dict[str, Any]) -> str:
     left = _grid_cells(spec["left"])
     right = _grid_cells(spec["right"])
-    return (
+    result = _grid_cells(spec["result"]) if spec.get("result") is not None else ""
+    equation = (
         '<div class="gc-vis-matrix-pair">'
         f'<div><span class="gc-vis-side-label">matrix A</span>{left}</div>'
         '<b aria-hidden="true">×</b>'
         f'<div><span class="gc-vis-side-label">matrix B</span>{right}</div>'
-        "</div>"
     )
+    if result:
+        equation += (
+            '<b aria-hidden="true">=</b>'
+            f'<div><span class="gc-vis-side-label">product</span>{result}</div>'
+        )
+    return f"{equation}</div>"
 
 
 def _first_queen_board(size: int) -> list[str]:
@@ -971,6 +1472,721 @@ def _argument_names(problem: dict[str, Any]) -> list[str]:
         return []
 
 
+def _string_dp_spec(title: str, first: str, second: str, third: str = "") -> dict[str, Any]:
+    columns = len(first) + 1
+    rows = len(second) + 1
+    values: list[list[Any]] = [[0] * columns for _ in range(rows)]
+
+    if title == "Longest Common Subsequence":
+        for row in range(1, rows):
+            for column in range(1, columns):
+                if second[row - 1] == first[column - 1]:
+                    values[row][column] = values[row - 1][column - 1] + 1
+                else:
+                    values[row][column] = max(
+                        values[row - 1][column],
+                        values[row][column - 1],
+                    )
+    elif title == "Edit Distance":
+        values[0] = list(range(columns))
+        for row in range(rows):
+            values[row][0] = row
+        for row in range(1, rows):
+            for column in range(1, columns):
+                if second[row - 1] == first[column - 1]:
+                    values[row][column] = values[row - 1][column - 1]
+                else:
+                    values[row][column] = 1 + min(
+                        values[row - 1][column],
+                        values[row][column - 1],
+                        values[row - 1][column - 1],
+                    )
+    elif title == "Distinct Subsequences":
+        values[0] = [1] * columns
+        for row in range(1, rows):
+            for column in range(1, columns):
+                values[row][column] = values[row][column - 1]
+                if second[row - 1] == first[column - 1]:
+                    values[row][column] += values[row - 1][column - 1]
+    elif title == "Interleaving String":
+        bool_values: list[list[bool]] = [
+            [False] * columns for _ in range(rows)
+        ]
+        bool_values[0][0] = True
+        for row in range(rows):
+            for column in range(columns):
+                if row == 0 and column == 0:
+                    continue
+                output_index = row + column - 1
+                from_top = (
+                    row > 0
+                    and bool_values[row - 1][column]
+                    and output_index < len(third)
+                    and second[row - 1] == third[output_index]
+                )
+                from_left = (
+                    column > 0
+                    and bool_values[row][column - 1]
+                    and output_index < len(third)
+                    and first[column - 1] == third[output_index]
+                )
+                bool_values[row][column] = from_top or from_left
+        values = bool_values
+
+    return {
+        "top_labels": ["∅", *first],
+        "side_labels": ["∅", *second],
+        "values": values,
+        "active": [(rows - 1, columns - 1)],
+    }
+
+
+def _path_count_values(obstacles: list[list[Any]]) -> list[list[Any]]:
+    rows = len(obstacles)
+    columns = len(obstacles[0])
+    counts = [[0] * columns for _ in range(rows)]
+    for row in range(rows):
+        for column in range(columns):
+            if obstacles[row][column] in (1, True):
+                counts[row][column] = "×"
+                continue
+            if row == 0 and column == 0:
+                counts[row][column] = 1
+                continue
+            from_top = counts[row - 1][column] if row else 0
+            from_left = counts[row][column - 1] if column else 0
+            counts[row][column] = (
+                (from_top if isinstance(from_top, int) else 0)
+                + (from_left if isinstance(from_left, int) else 0)
+            )
+    return counts
+
+
+def _minimum_grid_path(
+    grid: list[list[int]],
+    falling: bool = False,
+) -> tuple[list[tuple[int, int]], int]:
+    rows, columns = len(grid), len(grid[0])
+    costs = [[float("inf")] * columns for _ in range(rows)]
+    parent: dict[tuple[int, int], tuple[int, int]] = {}
+    if falling:
+        costs[0] = [int(value) for value in grid[0]]
+        for row in range(1, rows):
+            for column in range(columns):
+                candidates = [
+                    previous
+                    for previous in (column - 1, column, column + 1)
+                    if 0 <= previous < columns
+                ]
+                best = min(candidates, key=lambda previous: costs[row - 1][previous])
+                costs[row][column] = costs[row - 1][best] + grid[row][column]
+                parent[(row, column)] = (row - 1, best)
+        end = (rows - 1, min(range(columns), key=lambda column: costs[-1][column]))
+    else:
+        costs[0][0] = grid[0][0]
+        for row in range(rows):
+            for column in range(columns):
+                if row == 0 and column == 0:
+                    continue
+                candidates = []
+                if row:
+                    candidates.append((row - 1, column))
+                if column:
+                    candidates.append((row, column - 1))
+                best = min(candidates, key=lambda cell: costs[cell[0]][cell[1]])
+                costs[row][column] = costs[best[0]][best[1]] + grid[row][column]
+                parent[(row, column)] = best
+        end = (rows - 1, columns - 1)
+
+    path = [end]
+    while path[-1] in parent:
+        path.append(parent[path[-1]])
+    path.reverse()
+    return path, int(costs[end[0]][end[1]])
+
+
+def _longest_increasing_grid_path(grid: list[list[int]]) -> list[tuple[int, int]]:
+    rows, columns = len(grid), len(grid[0])
+    memo: dict[tuple[int, int], list[tuple[int, int]]] = {}
+
+    def visit(row: int, column: int) -> list[tuple[int, int]]:
+        if (row, column) in memo:
+            return memo[(row, column)]
+        best: list[tuple[int, int]] = []
+        for row_step, column_step in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            next_row, next_column = row + row_step, column + column_step
+            if (
+                0 <= next_row < rows
+                and 0 <= next_column < columns
+                and grid[next_row][next_column] > grid[row][column]
+            ):
+                candidate = visit(next_row, next_column)
+                if len(candidate) > len(best):
+                    best = candidate
+        memo[(row, column)] = [(row, column), *best]
+        return memo[(row, column)]
+
+    return max(
+        (visit(row, column) for row in range(rows) for column in range(columns)),
+        key=len,
+    )
+
+
+def _largest_square_region(matrix: list[list[Any]]) -> list[tuple[int, int]]:
+    rows, columns = len(matrix), len(matrix[0])
+    dp = [[0] * (columns + 1) for _ in range(rows + 1)]
+    best_size = 0
+    best_end = (0, 0)
+    for row in range(1, rows + 1):
+        for column in range(1, columns + 1):
+            if str(matrix[row - 1][column - 1]) == "1":
+                dp[row][column] = 1 + min(
+                    dp[row - 1][column],
+                    dp[row][column - 1],
+                    dp[row - 1][column - 1],
+                )
+                if dp[row][column] > best_size:
+                    best_size = dp[row][column]
+                    best_end = (row - 1, column - 1)
+    end_row, end_column = best_end
+    return [
+        (row, column)
+        for row in range(end_row - best_size + 1, end_row + 1)
+        for column in range(end_column - best_size + 1, end_column + 1)
+    ]
+
+
+def _largest_rectangle_region(matrix: list[list[Any]]) -> list[tuple[int, int]]:
+    rows, columns = len(matrix), len(matrix[0])
+    heights = [0] * columns
+    best_area = 0
+    best = (0, 0, -1)
+    for row in range(rows):
+        heights = [
+            heights[column] + 1 if str(matrix[row][column]) == "1" else 0
+            for column in range(columns)
+        ]
+        stack: list[int] = []
+        for column in range(columns + 1):
+            height = heights[column] if column < columns else 0
+            while stack and heights[stack[-1]] > height:
+                top = stack.pop()
+                left = stack[-1] + 1 if stack else 0
+                area = heights[top] * (column - left)
+                if area > best_area:
+                    best_area = area
+                    best = (row, left, column - 1)
+            stack.append(column)
+    end_row, left, right = best
+    height = best_area // max(1, right - left + 1)
+    return [
+        (row, column)
+        for row in range(end_row - height + 1, end_row + 1)
+        for column in range(left, right + 1)
+    ]
+
+
+def _paint_house_path(costs: list[list[int]]) -> list[tuple[int, int]]:
+    rows, columns = len(costs), len(costs[0])
+    dp = [list(costs[0])]
+    parents: list[list[int | None]] = [[None] * columns]
+    for row in range(1, rows):
+        dp.append([0] * columns)
+        parents.append([None] * columns)
+        for color in range(columns):
+            previous = min(
+                (candidate for candidate in range(columns) if candidate != color),
+                key=lambda candidate: dp[row - 1][candidate],
+            )
+            dp[row][color] = costs[row][color] + dp[row - 1][previous]
+            parents[row][color] = previous
+    color = min(range(columns), key=lambda candidate: dp[-1][candidate])
+    path = []
+    for row in range(rows - 1, -1, -1):
+        path.append((row, color))
+        previous = parents[row][color]
+        if previous is not None:
+            color = previous
+    return list(reversed(path))
+
+
+def _triangle_min_path(triangle: list[list[int]]) -> list[tuple[int, int]]:
+    costs = [list(row) for row in triangle]
+    choices: dict[tuple[int, int], int] = {}
+    for row in range(len(triangle) - 2, -1, -1):
+        for column in range(len(triangle[row])):
+            next_column = (
+                column
+                if costs[row + 1][column] <= costs[row + 1][column + 1]
+                else column + 1
+            )
+            choices[(row, column)] = next_column
+            costs[row][column] += costs[row + 1][next_column]
+    path = []
+    column = 0
+    for row in range(len(triangle)):
+        path.append((row, column))
+        if row < len(triangle) - 1:
+            column = choices[(row, column)]
+    return path
+
+
+def _dungeon_health_grid(dungeon: list[list[int]]) -> list[list[int]]:
+    rows, columns = len(dungeon), len(dungeon[0])
+    needed = [[10**9] * columns for _ in range(rows)]
+    for row in range(rows - 1, -1, -1):
+        for column in range(columns - 1, -1, -1):
+            if row == rows - 1 and column == columns - 1:
+                onward = 1
+            else:
+                onward = min(
+                    needed[row + 1][column] if row + 1 < rows else 10**9,
+                    needed[row][column + 1] if column + 1 < columns else 10**9,
+                )
+            needed[row][column] = max(1, onward - dungeon[row][column])
+    return needed
+
+
+def _word_search_path(
+    board: list[list[str]],
+    word: str,
+) -> list[tuple[int, int]]:
+    rows, columns = len(board), len(board[0])
+
+    def visit(
+        row: int,
+        column: int,
+        index: int,
+        used: set[tuple[int, int]],
+    ) -> list[tuple[int, int]] | None:
+        if board[row][column] != word[index]:
+            return None
+        if index == len(word) - 1:
+            return [(row, column)]
+        used.add((row, column))
+        for row_step, column_step in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            next_row, next_column = row + row_step, column + column_step
+            if (
+                0 <= next_row < rows
+                and 0 <= next_column < columns
+                and (next_row, next_column) not in used
+            ):
+                suffix = visit(
+                    next_row,
+                    next_column,
+                    index + 1,
+                    used,
+                )
+                if suffix:
+                    used.remove((row, column))
+                    return [(row, column), *suffix]
+        used.remove((row, column))
+        return None
+
+    if not word:
+        return []
+    for row in range(rows):
+        for column in range(columns):
+            path = visit(row, column, 0, set())
+            if path:
+                return path
+    return []
+
+
+def _grid_components(
+    grid: list[list[Any]],
+    land_value: Any,
+) -> list[list[tuple[int, int]]]:
+    rows, columns = len(grid), len(grid[0])
+    remaining = {
+        (row, column)
+        for row in range(rows)
+        for column in range(columns)
+        if grid[row][column] == land_value
+        or str(grid[row][column]) == str(land_value)
+    }
+    components = []
+    while remaining:
+        start = next(iter(remaining))
+        remaining.remove(start)
+        stack = [start]
+        component = []
+        while stack:
+            row, column = stack.pop()
+            component.append((row, column))
+            for row_step, column_step in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                neighbor = (row + row_step, column + column_step)
+                if neighbor in remaining:
+                    remaining.remove(neighbor)
+                    stack.append(neighbor)
+        components.append(component)
+    return components
+
+
+def _reconstruct_cell_path(
+    parent: dict[tuple[int, int], tuple[int, int] | None],
+    end: tuple[int, int],
+) -> list[tuple[int, int]]:
+    path = [end]
+    while parent[path[-1]] is not None:
+        path.append(parent[path[-1]])  # type: ignore[arg-type]
+    return list(reversed(path))
+
+
+def _binary_grid_shortest_path(
+    grid: list[list[int]],
+) -> list[tuple[int, int]]:
+    rows, columns = len(grid), len(grid[0])
+    start, end = (0, 0), (rows - 1, columns - 1)
+    if grid[0][0] != 0 or grid[-1][-1] != 0:
+        return []
+    parent: dict[tuple[int, int], tuple[int, int] | None] = {start: None}
+    queue = deque([start])
+    while queue:
+        row, column = queue.popleft()
+        if (row, column) == end:
+            return _reconstruct_cell_path(parent, end)
+        for row_step in (-1, 0, 1):
+            for column_step in (-1, 0, 1):
+                if row_step == column_step == 0:
+                    continue
+                neighbor = (row + row_step, column + column_step)
+                if (
+                    0 <= neighbor[0] < rows
+                    and 0 <= neighbor[1] < columns
+                    and grid[neighbor[0]][neighbor[1]] == 0
+                    and neighbor not in parent
+                ):
+                    parent[neighbor] = (row, column)
+                    queue.append(neighbor)
+    return []
+
+
+def _obstacle_elimination_path(
+    grid: list[list[int]],
+    eliminations: int,
+) -> list[tuple[int, int]]:
+    rows, columns = len(grid), len(grid[0])
+    remaining = eliminations - int(grid[0][0])
+    if remaining < 0:
+        return []
+    start = (0, 0, remaining)
+    queue = deque([start])
+    best_remaining = {(0, 0): remaining}
+    parent: dict[
+        tuple[int, int, int],
+        tuple[int, int, int] | None,
+    ] = {start: None}
+    end_state: tuple[int, int, int] | None = None
+    while queue:
+        row, column, remaining = queue.popleft()
+        if (row, column) == (rows - 1, columns - 1):
+            end_state = (row, column, remaining)
+            break
+        for row_step, column_step in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            next_row, next_column = row + row_step, column + column_step
+            if not (0 <= next_row < rows and 0 <= next_column < columns):
+                continue
+            next_remaining = remaining - int(grid[next_row][next_column])
+            if next_remaining < 0:
+                continue
+            if next_remaining <= best_remaining.get((next_row, next_column), -1):
+                continue
+            next_state = (next_row, next_column, next_remaining)
+            best_remaining[(next_row, next_column)] = next_remaining
+            parent[next_state] = (row, column, remaining)
+            queue.append(next_state)
+    if end_state is None:
+        return []
+    states = [end_state]
+    while parent[states[-1]] is not None:
+        states.append(parent[states[-1]])  # type: ignore[arg-type]
+    return [(row, column) for row, column, _ in reversed(states)]
+
+
+def _priority_grid_path(
+    grid: list[list[int]],
+    objective: str,
+) -> tuple[list[tuple[int, int]], int]:
+    rows, columns = len(grid), len(grid[0])
+    start, end = (0, 0), (rows - 1, columns - 1)
+    parent: dict[tuple[int, int], tuple[int, int] | None] = {start: None}
+    if objective == "maximin":
+        scores = [[-1] * columns for _ in range(rows)]
+        scores[0][0] = int(grid[0][0])
+        heap = [(-scores[0][0], 0, 0)]
+    else:
+        scores = [[10**9] * columns for _ in range(rows)]
+        scores[0][0] = int(grid[0][0])
+        heap = [(scores[0][0], 0, 0)]
+
+    while heap:
+        priority, row, column = heappop(heap)
+        score = -priority if objective == "maximin" else priority
+        if score != scores[row][column]:
+            continue
+        if (row, column) == end:
+            return _reconstruct_cell_path(parent, end), int(score)
+        for row_step, column_step in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            next_row, next_column = row + row_step, column + column_step
+            if not (0 <= next_row < rows and 0 <= next_column < columns):
+                continue
+            if objective == "maximin":
+                candidate = min(score, int(grid[next_row][next_column]))
+                improves = candidate > scores[next_row][next_column]
+            elif objective == "minimax":
+                candidate = max(score, int(grid[next_row][next_column]))
+                improves = candidate < scores[next_row][next_column]
+            else:
+                candidate = score + int(grid[next_row][next_column])
+                improves = candidate < scores[next_row][next_column]
+            if not improves:
+                continue
+            scores[next_row][next_column] = candidate
+            parent[(next_row, next_column)] = (row, column)
+            heappush(
+                heap,
+                (
+                    -candidate if objective == "maximin" else candidate,
+                    next_row,
+                    next_column,
+                ),
+            )
+    return [], -1
+
+
+def _safest_grid_path(
+    grid: list[list[int]],
+) -> tuple[list[tuple[int, int]], int]:
+    rows, columns = len(grid), len(grid[0])
+    distances = [[10**9] * columns for _ in range(rows)]
+    queue: deque[tuple[int, int]] = deque()
+    for row in range(rows):
+        for column in range(columns):
+            if int(grid[row][column]) == 1:
+                distances[row][column] = 0
+                queue.append((row, column))
+    while queue:
+        row, column = queue.popleft()
+        for row_step, column_step in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            next_row, next_column = row + row_step, column + column_step
+            if (
+                0 <= next_row < rows
+                and 0 <= next_column < columns
+                and distances[next_row][next_column] > distances[row][column] + 1
+            ):
+                distances[next_row][next_column] = distances[row][column] + 1
+                queue.append((next_row, next_column))
+    return _priority_grid_path(distances, "maximin")
+
+
+def _shortest_bridge_cells(
+    grid: list[list[int]],
+) -> tuple[list[list[tuple[int, int]]], list[tuple[int, int]]]:
+    components = _grid_components(grid, 1)
+    if len(components) < 2:
+        return components, []
+    first = set(components[0])
+    queue = deque(components[0])
+    parent: dict[tuple[int, int], tuple[int, int] | None] = {
+        cell: None for cell in components[0]
+    }
+    rows, columns = len(grid), len(grid[0])
+    while queue:
+        row, column = queue.popleft()
+        for row_step, column_step in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            neighbor = (row + row_step, column + column_step)
+            if not (0 <= neighbor[0] < rows and 0 <= neighbor[1] < columns):
+                continue
+            if neighbor in first or neighbor in parent:
+                continue
+            if int(grid[neighbor[0]][neighbor[1]]) == 1:
+                bridge = []
+                current = (row, column)
+                while current not in first:
+                    bridge.append(current)
+                    previous = parent[current]
+                    if previous is None:
+                        break
+                    current = previous
+                return components, list(reversed(bridge))
+            parent[neighbor] = (row, column)
+            queue.append(neighbor)
+    return components, []
+
+
+def _largest_island_flip(
+    grid: list[list[int]],
+) -> tuple[list[list[tuple[int, int]]], tuple[int, int] | None]:
+    components = _grid_components(grid, 1)
+    component_by_cell = {
+        cell: index
+        for index, component in enumerate(components)
+        for cell in component
+    }
+    best_size = max((len(component) for component in components), default=0)
+    best_cell = None
+    rows, columns = len(grid), len(grid[0])
+    for row in range(rows):
+        for column in range(columns):
+            if int(grid[row][column]) != 0:
+                continue
+            adjacent = {
+                component_by_cell[(next_row, next_column)]
+                for row_step, column_step in ((1, 0), (-1, 0), (0, 1), (0, -1))
+                if 0 <= (next_row := row + row_step) < rows
+                and 0 <= (next_column := column + column_step) < columns
+                and (next_row, next_column) in component_by_cell
+            }
+            size = 1 + sum(len(components[index]) for index in adjacent)
+            if size > best_size:
+                best_size = size
+                best_cell = (row, column)
+    return components, best_cell
+
+
+def _optimal_book_shelves(
+    books: list[list[int]],
+    shelf_width: int,
+) -> list[list[list[int]]]:
+    count = len(books)
+    best = [0] + [10**9] * count
+    previous = [0] * (count + 1)
+    for end in range(1, count + 1):
+        width = 0
+        height = 0
+        for start in range(end, 0, -1):
+            width += books[start - 1][0]
+            if width > shelf_width:
+                break
+            height = max(height, books[start - 1][1])
+            candidate = best[start - 1] + height
+            if candidate < best[end]:
+                best[end] = candidate
+                previous[end] = start - 1
+    shelves = []
+    end = count
+    while end:
+        start = previous[end]
+        shelves.append(books[start:end])
+        end = start
+    return list(reversed(shelves))
+
+
+def _maximum_product_span(values: list[int]) -> list[int]:
+    best_product: int | None = None
+    best_span = (0, 0)
+    for start in range(len(values)):
+        product = 1
+        for end in range(start, len(values)):
+            product *= values[end]
+            if best_product is None or product > best_product:
+                best_product = product
+                best_span = (start, end)
+    return list(range(best_span[0], best_span[1] + 1))
+
+
+def _linear_robbery(values: list[int], offset: int) -> tuple[int, list[int]]:
+    previous_two = (0, [])
+    previous_one = (0, [])
+    for index, value in enumerate(values):
+        take = (
+            previous_two[0] + value,
+            [*previous_two[1], index + offset],
+        )
+        skip = previous_one
+        current = take if take[0] > skip[0] else skip
+        previous_two, previous_one = previous_one, current
+    return previous_one
+
+
+def _circular_robbery_indices(values: list[int]) -> list[int]:
+    if len(values) <= 1:
+        return [0] if values else []
+    without_last = _linear_robbery(values[:-1], 0)
+    without_first = _linear_robbery(values[1:], 1)
+    return (
+        without_last[1]
+        if without_last[0] >= without_first[0]
+        else without_first[1]
+    )
+
+
+def _minimum_jump_path(values: list[int]) -> list[int]:
+    if not values:
+        return []
+    parents = [-1] * len(values)
+    furthest_discovered = 0
+    for index, reach in enumerate(values):
+        if index > furthest_discovered:
+            break
+        boundary = min(len(values) - 1, index + reach)
+        for child in range(furthest_discovered + 1, boundary + 1):
+            parents[child] = index
+        furthest_discovered = max(furthest_discovered, boundary)
+        if furthest_discovered == len(values) - 1:
+            break
+    if len(values) > 1 and parents[-1] == -1:
+        return [0]
+    path = [len(values) - 1]
+    while path[-1] > 0:
+        path.append(parents[path[-1]])
+    return list(reversed(path))
+
+
+def _split_array_groups(values: list[int], group_count: int) -> list[int]:
+    count = len(values)
+    prefix = [0]
+    for value in values:
+        prefix.append(prefix[-1] + value)
+    dp = [[float("inf")] * (count + 1) for _ in range(group_count + 1)]
+    parent = [[-1] * (count + 1) for _ in range(group_count + 1)]
+    dp[0][0] = 0
+    for groups in range(1, group_count + 1):
+        for end in range(groups, count + 1):
+            for split in range(groups - 1, end):
+                candidate = max(dp[groups - 1][split], prefix[end] - prefix[split])
+                if candidate < dp[groups][end]:
+                    dp[groups][end] = candidate
+                    parent[groups][end] = split
+    boundaries = [count]
+    groups, end = group_count, count
+    while groups:
+        end = parent[groups][end]
+        boundaries.append(end)
+        groups -= 1
+    boundaries.reverse()
+    tones = [1] * count
+    for group in range(group_count):
+        for index in range(boundaries[group], boundaries[group + 1]):
+            tones[index] = group % 3 + 1
+    return tones
+
+
+def _palindrome_partition(value: str) -> list[str]:
+    count = len(value)
+    cuts = [10**9] * (count + 1)
+    cuts[0] = -1
+    parent = [0] * (count + 1)
+    palindrome = [[False] * count for _ in range(count)]
+    for end in range(count):
+        for start in range(end + 1):
+            if value[start] == value[end] and (
+                end - start <= 2 or palindrome[start + 1][end - 1]
+            ):
+                palindrome[start][end] = True
+                if cuts[start] + 1 < cuts[end + 1]:
+                    cuts[end + 1] = cuts[start] + 1
+                    parent[end + 1] = start
+    parts = []
+    end = count
+    while end:
+        start = parent[end]
+        parts.append(value[start:end])
+        end = start
+    return list(reversed(parts))
+
+
 def _result_text(value: Any) -> str:
     return _compact_value(value)
 
@@ -991,6 +2207,233 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
 
     def argument(index: int, default: Any = None) -> Any:
         return args[index] if 0 <= index < len(args) else default
+
+    if requested_kind == "stair_costs":
+        costs = argument(decision.get("arg_index", 0), [])
+        return {
+            "kind": "stair_costs",
+            "label": label,
+            "costs": costs,
+            "caption": (
+                "Each step shows the cost paid when landing there; "
+                f"the least total cost to move beyond the last step is {result}."
+            ),
+        }
+
+    if requested_kind == "subarray_result":
+        values = argument(decision.get("arg_index", 0), [])
+        active = _maximum_product_span(values)
+        return {
+            "kind": "sequence",
+            "label": label,
+            "items": values,
+            "active": active,
+            "caption": (
+                "The highlighted contiguous block has the maximum product, "
+                f"which is {result}."
+            ),
+        }
+
+    if requested_kind == "house_circle":
+        values = argument(decision.get("arg_index", 0), [])
+        return {
+            "kind": "house_circle",
+            "label": label,
+            "values": values,
+            "active": _circular_robbery_indices(values),
+            "caption": (
+                "The circular layout makes the first and last houses adjacent. "
+                f"The highlighted nonadjacent selection totals {result}."
+            ),
+        }
+
+    if requested_kind == "jump_path":
+        values = argument(decision.get("arg_index", 0), [])
+        path = _minimum_jump_path(values)
+        annotations = {
+            index: (
+                "finish"
+                if index == len(values) - 1
+                else f"jump ≤ {values[index]}"
+            )
+            for index in path
+        }
+        return {
+            "kind": "sequence",
+            "label": label,
+            "items": values,
+            "active": path,
+            "annotations": annotations,
+            "caption": (
+                "The highlighted indices form a valid shortest route to the final "
+                f"position; the expected result is {result}."
+            ),
+        }
+
+    if requested_kind == "split_array":
+        values = argument(decision.get("arg_index", 0), [])
+        groups = int(args[1]) if len(args) > 1 else 1
+        return {
+            "kind": "sequence",
+            "label": label,
+            "items": values,
+            "tones": _split_array_groups(values, groups),
+            "caption": (
+                "Colors mark one optimal contiguous partition; its largest group "
+                f"sum is {result}."
+            ),
+        }
+
+    if requested_kind == "pal_partition":
+        value = str(argument(decision.get("arg_index", 0), ""))
+        parts = _palindrome_partition(value)
+        return {
+            "kind": "segments",
+            "label": label,
+            "segments": parts,
+            "caption": (
+                "Each displayed segment is a palindrome. The separators give "
+                f"the minimum {result} cut{'s' if expected != 1 else ''}."
+            ),
+        }
+
+    if requested_kind == "dp_table":
+        indexes = decision.get("arg_indexes", [0, 1])
+        first = str(argument(indexes[0], ""))
+        second = str(argument(indexes[1], ""))
+        third = str(args[2]) if len(args) > 2 else ""
+        table = _string_dp_spec(title, first, second, third)
+        return {
+            "kind": "dp_table",
+            "label": label,
+            **table,
+            "caption": (
+                "Each cell is the solved value for the two displayed prefixes; "
+                f"the highlighted full-prefix cell is {result}."
+            ),
+        }
+
+    if requested_kind == "path_count_grid":
+        if title == "Unique Paths":
+            rows, columns = int(args[0]), int(args[1])
+            obstacles = [[0] * columns for _ in range(rows)]
+        else:
+            obstacles = argument(decision.get("arg_index", 0), [])
+            rows, columns = len(obstacles), len(obstacles[0])
+        counts = _path_count_values(obstacles)
+        classes = {
+            (row, column): "separate"
+            for row in range(rows)
+            for column in range(columns)
+            if obstacles[row][column] in (1, True)
+        }
+        classes[(0, 0)] = "source"
+        classes[(rows - 1, columns - 1)] = "connected"
+        return {
+            "kind": "grid",
+            "label": label,
+            "values": counts,
+            "cell_classes": classes,
+            "caption": (
+                "Each open cell shows how many right-and-down paths reach it; "
+                f"the destination contains {result}."
+            ),
+        }
+
+    if requested_kind == "paint_house":
+        costs = argument(decision.get("arg_index", 0), [])
+        path = _paint_house_path(costs)
+        return {
+            "kind": "grid",
+            "label": label,
+            "values": costs,
+            "cell_classes": {cell: "changed" for cell in path},
+            "caption": (
+                "Rows are houses and columns are colors. The highlighted cells "
+                f"form one minimum-cost valid assignment totaling {result}."
+            ),
+        }
+
+    if requested_kind == "matrix_region":
+        matrix = argument(decision.get("arg_index", 0), [])
+        region = (
+            _largest_square_region(matrix)
+            if title == "Maximal Square"
+            else _largest_rectangle_region(matrix)
+        )
+        return {
+            "kind": "grid",
+            "label": label,
+            "values": matrix,
+            "cell_classes": {cell: "connected" for cell in region},
+            "caption": (
+                f"The highlighted all-1 region has the maximum area of {result}."
+            ),
+        }
+
+    if requested_kind == "matrix_path":
+        matrix = argument(decision.get("arg_index", 0), [])
+        if title == "Longest Increasing Path in a Matrix":
+            path = _longest_increasing_grid_path(matrix)
+        else:
+            path, _ = _minimum_grid_path(
+                matrix,
+                falling=title == "Minimum Falling Path Sum",
+            )
+        classes = {cell: "changed" for cell in path}
+        if path:
+            classes[path[0]] = "source"
+            classes[path[-1]] = "connected"
+        return {
+            "kind": "grid",
+            "label": label,
+            "values": matrix,
+            "cell_classes": classes,
+            "order": [
+                next(
+                    (
+                        order
+                        for order, cell in enumerate(path, 1)
+                        if cell == (row, column)
+                    ),
+                    None,
+                )
+                for row in range(len(matrix))
+                for column in range(len(matrix[row]))
+            ],
+            "caption": (
+                "The numbered cells show one optimal path for the first example; "
+                f"its expected result is {result}."
+            ),
+        }
+
+    if requested_kind == "dungeon_dp":
+        dungeon = argument(decision.get("arg_index", 0), [])
+        needed = _dungeon_health_grid(dungeon)
+        return {
+            "kind": "grid_compare",
+            "label": label,
+            "before": dungeon,
+            "after": needed,
+            "left_label": "room effect",
+            "right_label": "health needed",
+            "caption": (
+                "The right grid gives the minimum health required before entering "
+                f"each room; the start cell is {result}."
+            ),
+        }
+
+    if requested_kind == "triangle_path":
+        triangle = argument(decision.get("arg_index", 0), [])
+        return {
+            "kind": "pyramid",
+            "label": label,
+            "rows": triangle,
+            "active": _triangle_min_path(triangle),
+            "caption": (
+                f"The highlighted adjacent values form a minimum path totaling {result}."
+            ),
+        }
 
     if requested_kind == "grid_dimensions":
         indexes = decision.get("arg_indexes", [0, 1])
@@ -1039,13 +2482,19 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
         }
 
     if requested_kind == "books":
+        books = argument(decision.get("arg_index", 0), [])
+        shelf_width = int(args[1]) if len(args) > 1 else sum(
+            book[0] for book in books
+        )
         return {
             "kind": "books",
             "label": label,
-            "books": argument(decision.get("arg_index", 0), []),
+            "books": books,
+            "shelf_width": shelf_width,
+            "shelves": _optimal_book_shelves(books, shelf_width),
             "caption": (
-                "Each book keeps its input order, width, and relative height; "
-                f"the minimum total shelf height is {result}."
+                "The rows show one optimal shelf arrangement while preserving "
+                f"book order; their total height is {result}."
             ),
         }
 
@@ -1156,6 +2605,37 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
             ),
         }
 
+    if requested_kind == "snakes_board":
+        board = argument(decision.get("arg_index", 0), [])
+        size = len(board)
+        values: list[list[Any]] = [[""] * size for _ in range(size)]
+        classes: dict[tuple[int, int], str] = {}
+        for square in range(1, size * size + 1):
+            level, offset = divmod(square - 1, size)
+            row = size - 1 - level
+            column = offset if level % 2 == 0 else size - 1 - offset
+            destination = board[row][column]
+            values[row][column] = (
+                f"{square}→{destination}"
+                if destination != -1
+                else square
+            )
+            if destination != -1:
+                classes[(row, column)] = "source"
+        classes[(size - 1, 0)] = "changed"
+        end_column = 0 if (size - 1) % 2 else size - 1
+        classes[(0, end_column)] = "connected"
+        return {
+            "kind": "grid",
+            "label": label,
+            "values": values,
+            "cell_classes": classes,
+            "caption": (
+                "Cells follow the board's alternating square order; arrows show "
+                f"snakes or ladders. The minimum roll count is {result}."
+            ),
+        }
+
     if requested_kind == "character_grid":
         rows = argument(decision.get("arg_index", 0), [])
         return {
@@ -1175,9 +2655,10 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
             "label": label,
             "left": argument(indexes[0], []),
             "right": argument(indexes[1], []),
+            "result": expected if isinstance(expected, list) else None,
             "caption": (
-                "The two sparse input matrices are shown side by side; "
-                f"their product is {result}."
+                "The input matrices and their exact product are shown in the "
+                "same row-and-column layout."
             ),
         }
 
@@ -1286,11 +2767,24 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
         if not isinstance(grid, list) or not grid:
             return None
         if requested_kind == "grid_compare_auto":
+            separators: dict[tuple[int, int], str] = {}
+            if title == "Sudoku Solver":
+                for row_index, row in enumerate(grid):
+                    for column_index, _ in enumerate(row):
+                        classes = []
+                        if column_index in {2, 5}:
+                            classes.append("box-right")
+                        if row_index in {2, 5}:
+                            classes.append("box-bottom")
+                        if classes:
+                            separators[(row_index, column_index)] = " ".join(classes)
             return {
                 "kind": "grid_compare",
                 "label": label,
                 "before": grid,
                 "after": expected,
+                "before_classes": separators,
+                "after_classes": separators,
                 "left_label": "input",
                 "right_label": "expected",
                 "caption": (
@@ -1299,6 +2793,8 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
                 ),
             }
         classes: dict[tuple[int, int], str] = {}
+        order: list[int | None] | None = None
+        caption_override: str | None = None
         if (
             isinstance(expected, list)
             and expected
@@ -1315,12 +2811,226 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
                 if 0 <= cell[0] < len(grid)
                 and 0 <= cell[1] < len(grid[cell[0]])
             }
+        flattened = [value for row in grid for value in row]
+        if flattened and all(str(value) in {"0", "1"} for value in flattened):
+            obstacle_titles = {
+                "Minimum Obstacle Removal to Reach Corner",
+                "Shortest Path in Binary Matrix",
+                "Shortest Path in a Grid with Obstacles Elimination",
+            }
+            for row_index, row in enumerate(grid):
+                for column_index, value in enumerate(row):
+                    if title in obstacle_titles:
+                        tone = "separate" if str(value) == "1" else "is-water"
+                    elif title == "Find the Safest Path in a Grid":
+                        tone = "source" if str(value) == "1" else "is-water"
+                    elif title == "Number of Closed Islands":
+                        tone = "is-water" if str(value) == "1" else "group-1"
+                    else:
+                        tone = "group-1" if str(value) == "1" else "is-water"
+                    classes.setdefault((row_index, column_index), tone)
+            if title == "Max Area of Island":
+                components = _grid_components(grid, 1)
+                largest = max(components, key=len, default=[])
+                for component in components:
+                    for cell in component:
+                        classes[cell] = (
+                            "connected" if component is largest else "group-2"
+                        )
+            if title == "Number of Closed Islands":
+                rows, columns = len(grid), len(grid[0])
+                for component in _grid_components(grid, 0):
+                    is_closed = all(
+                        row not in {0, rows - 1}
+                        and column not in {0, columns - 1}
+                        for row, column in component
+                    )
+                    for cell in component:
+                        classes[cell] = "connected" if is_closed else "source"
+            if title == "Making A Large Island":
+                components, best_flip = _largest_island_flip(grid)
+                component_tones = ("group-1", "group-2", "group-3")
+                for index, component in enumerate(components):
+                    for cell in component:
+                        classes[cell] = component_tones[index % len(component_tones)]
+                if best_flip is not None:
+                    classes[best_flip] = "source"
+                caption_override = (
+                    "Colors separate the existing islands. The orange water cell "
+                    f"is one optimal flip, producing area {result}."
+                )
+            if title == "Shortest Bridge":
+                components, bridge = _shortest_bridge_cells(grid)
+                for index, component in enumerate(components[:2]):
+                    for cell in component:
+                        classes[cell] = "group-1" if index == 0 else "group-2"
+                for cell in bridge:
+                    classes[cell] = "changed"
+                order = [
+                    next(
+                        (
+                            step
+                            for step, cell in enumerate(bridge, 1)
+                            if cell == (row_index, column_index)
+                        ),
+                        None,
+                    )
+                    for row_index, row in enumerate(grid)
+                    for column_index, _ in enumerate(row)
+                ]
+                caption_override = (
+                    "The two colors are the original islands. The numbered water "
+                    f"cells form a shortest bridge using {result} flip"
+                    f"{'s' if expected != 1 else ''}."
+                )
+        if title == "Rotting Oranges":
+            for row_index, row in enumerate(grid):
+                for column_index, value in enumerate(row):
+                    classes[(row_index, column_index)] = (
+                        "source" if value == 2
+                        else "connected" if value == 1
+                        else "is-water"
+                    )
+        if title == "Shortest Distance from All Buildings":
+            for row_index, row in enumerate(grid):
+                for column_index, value in enumerate(row):
+                    classes[(row_index, column_index)] = (
+                        "source" if value == 1
+                        else "separate" if value == 2
+                        else "is-water"
+                    )
+        if title in {"Valid Sudoku", "Sudoku Solver"}:
+            for row_index, row in enumerate(grid):
+                for column_index, _ in enumerate(row):
+                    separators = []
+                    if column_index in {2, 5}:
+                        separators.append("box-right")
+                    if row_index in {2, 5}:
+                        separators.append("box-bottom")
+                    if separators:
+                        classes[(row_index, column_index)] = " ".join(separators)
         if "target" in names:
             target = argument(names.index("target"))
             for row_index, row in enumerate(grid):
                 for column_index, value in enumerate(row):
                     if value == target:
                         classes[(row_index, column_index)] = "source"
+        if title == "Kth Smallest Element in a Sorted Matrix":
+            for row_index, row in enumerate(grid):
+                for column_index, value in enumerate(row):
+                    if value == expected:
+                        classes[(row_index, column_index)] = "connected"
+        if title == "Word Search" and len(args) > 1 and isinstance(args[1], str):
+            path = _word_search_path(grid, args[1])
+            for cell in path:
+                classes[cell] = "changed"
+            order = [
+                next(
+                    (
+                        step
+                        for step, cell in enumerate(path, 1)
+                        if cell == (row_index, column_index)
+                    ),
+                    None,
+                )
+                for row_index, row in enumerate(grid)
+                for column_index, _ in enumerate(row)
+            ]
+        if title == "Robot Room Cleaner" and len(args) >= 3:
+            classes[(int(args[1]), int(args[2]))] = "source"
+        path: list[tuple[int, int]] = []
+        path_metric: int | None = None
+        if title == "Shortest Path in Binary Matrix":
+            path = _binary_grid_shortest_path(grid)
+            path_metric = len(path)
+            caption_override = (
+                "The numbered open cells form a shortest eight-direction path. "
+                f"It contains {result} cells."
+            )
+        elif title == "Shortest Path in a Grid with Obstacles Elimination":
+            eliminations = int(args[1]) if len(args) > 1 else 0
+            path = _obstacle_elimination_path(grid, eliminations)
+            path_metric = len(path) - 1 if path else -1
+            caption_override = (
+                "The numbered cells form a shortest route while using no more "
+                f"than {eliminations} obstacle elimination"
+                f"{'s' if eliminations != 1 else ''}; its length is {result}."
+            )
+        elif title == "Minimum Obstacle Removal to Reach Corner":
+            path, path_metric = _priority_grid_path(grid, "sum")
+            caption_override = (
+                "The numbered route minimizes the highlighted obstacle cells "
+                f"entered, so {result} removal"
+                f"{'s are' if expected != 1 else ' is'} required."
+            )
+        elif title == "Path With Maximum Minimum Value":
+            path, path_metric = _priority_grid_path(grid, "maximin")
+            caption_override = (
+                "The numbered route maximizes its smallest cell value; that "
+                f"bottleneck is {result}."
+            )
+        elif title == "Swim in Rising Water":
+            path, path_metric = _priority_grid_path(grid, "minimax")
+            caption_override = (
+                "The numbered route minimizes its highest elevation, so every "
+                f"cell on it is reachable at time {result}."
+            )
+        elif title == "Find the Safest Path in a Grid":
+            path, path_metric = _safest_grid_path(grid)
+            caption_override = (
+                "The numbered route maximizes its minimum Manhattan distance "
+                f"from a thief; its safeness factor is {result}."
+            )
+        if path:
+            for step, cell in enumerate(path, 1):
+                classes[cell] = (
+                    "source" if step == 1
+                    else "connected" if step == len(path)
+                    else "changed"
+                )
+            order = [
+                next(
+                    (
+                        step
+                        for step, cell in enumerate(path, 1)
+                        if cell == (row_index, column_index)
+                    ),
+                    None,
+                )
+                for row_index, row in enumerate(grid)
+                for column_index, _ in enumerate(row)
+            ]
+        if title == "Diagonal Traverse" and isinstance(expected, list):
+            positions: dict[Any, list[tuple[int, int]]] = {}
+            for row_index, row in enumerate(grid):
+                for column_index, value in enumerate(row):
+                    positions.setdefault(value, []).append((row_index, column_index))
+            used: set[tuple[int, int]] = set()
+            ordered_cells: list[tuple[int, int]] = []
+            for value in expected:
+                match = next(
+                    (
+                        cell
+                        for cell in positions.get(value, [])
+                        if cell not in used
+                    ),
+                    None,
+                )
+                if match is not None:
+                    used.add(match)
+                    ordered_cells.append(match)
+            order = [
+                next(
+                    (
+                        step
+                        for step, cell in enumerate(ordered_cells, 1)
+                        if cell == (row_index, column_index)
+                    ),
+                    None,
+                )
+                for row_index, row in enumerate(grid)
+                for column_index, _ in enumerate(row)
+            ]
         if title == "Find the Celebrity" and isinstance(expected, int):
             for row_index in range(len(grid)):
                 if expected < len(grid[row_index]):
@@ -1333,13 +3043,118 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
             "label": label,
             "values": grid,
             "cell_classes": classes,
+            "order": order,
+            "path": path,
+            "path_metric": path_metric,
             "caption": (
-                "The first example is laid out by row and column; "
-                f"its expected result is {result}."
+                caption_override
+                or (
+                    "The numbered cells spell the requested word in order."
+                    if title == "Word Search" and order
+                    else "Small numbers give the exact diagonal visit order."
+                    if title == "Diagonal Traverse" and order
+                    else "The first example is laid out by row and column; "
+                    f"its expected result is {result}."
+                )
             ),
         }
 
-    if requested_kind == "tree":
+    if requested_kind in {
+        "tree",
+        "tree_pair",
+        "tree_compare",
+        "tree_merge",
+        "tree_forest",
+        "tree_list",
+    }:
+        if requested_kind == "tree_pair":
+            indexes = decision.get("arg_indexes", [0, 1])
+            return {
+                "kind": "tree_collection",
+                "label": label,
+                "trees": [
+                    {"label": "first tree", "values": argument(indexes[0], [])},
+                    {"label": "second tree", "values": argument(indexes[1], [])},
+                ],
+                "caption": (
+                    "Both trees from the first example are shown with their exact "
+                    f"structure; the comparison returns {result}."
+                ),
+            }
+
+        if requested_kind == "tree_compare":
+            return {
+                "kind": "tree_collection",
+                "label": label,
+                "trees": [
+                    {"label": "input", "values": argument(decision.get("arg_index", 0), [])},
+                    {"label": "expected", "values": expected},
+                ],
+                "caption": (
+                    "The first example's input and expected tree are shown side by side."
+                ),
+            }
+
+        if requested_kind == "tree_merge":
+            indexes = decision.get("arg_indexes", [0, 1])
+            return {
+                "kind": "tree_collection",
+                "label": label,
+                "trees": [
+                    {"label": "tree 1", "values": argument(indexes[0], [])},
+                    {"label": "tree 2", "values": argument(indexes[1], [])},
+                    {"label": "merged", "values": expected},
+                ],
+                "caption": (
+                    "Corresponding input nodes combine to produce the displayed "
+                    "merged tree."
+                ),
+            }
+
+        if requested_kind == "tree_forest":
+            forest = (
+                expected
+                if isinstance(expected, list)
+                and all(isinstance(tree, list) for tree in expected)
+                else []
+            )
+            return {
+                "kind": "tree_collection",
+                "label": label,
+                "trees": [
+                    {
+                        "label": "input tree",
+                        "values": argument(decision.get("arg_index", 0), []),
+                    },
+                    *[
+                        {"label": f"result {index + 1}", "values": tree}
+                        for index, tree in enumerate(forest)
+                    ],
+                ],
+                "caption": (
+                    "The input tree and every tree returned by the first example "
+                    "are shown with their exact structures."
+                ),
+            }
+
+        if requested_kind == "tree_list":
+            return {
+                "kind": "tree_list_compare",
+                "label": label,
+                "input": argument(decision.get("arg_index", 0), []),
+                "output": expected,
+                "output_label": (
+                    "circular sorted order"
+                    if title == "Convert Binary Search Tree to Sorted Doubly Linked List"
+                    else "flattened preorder"
+                ),
+                "circular": title == "Convert Binary Search Tree to Sorted Doubly Linked List",
+                "caption": (
+                    "The first example's tree is shown beside the exact node order "
+                    "required in its transformed output."
+                ),
+            }
+
         if decision.get("source") == "expected":
             values = expected
         else:
@@ -1347,26 +3162,131 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
         if not isinstance(values, list):
             return None
         active_values: list[Any] = []
-        if isinstance(expected, (str, int, float, bool)):
-            active_values = [expected]
-        elif (
-            isinstance(expected, list)
-            and expected
-            and all(not isinstance(value, (list, dict)) for value in expected)
-            and decision.get("source") != "expected"
+        target_values: list[Any] = []
+        active_indices: list[int] = []
+        target_indices: list[int] = []
+        badges: dict[int, int] = {}
+        caption_override: str | None = None
+        if decision.get("highlight_result") and isinstance(
+            expected, (str, int, float)
         ):
+            active_values = [expected]
+        if decision.get("highlight_result_list") and isinstance(expected, list):
             active_values = [value for value in expected if value is not None]
+        for target_index in decision.get("target_arg_indexes", []):
+            target = argument(target_index)
+            if isinstance(target, (str, int, float)):
+                target_values.append(target)
+        if decision.get("range_arg_indexes"):
+            low_index, high_index = decision["range_arg_indexes"]
+            low, high = argument(low_index), argument(high_index)
+            active_values = [
+                node["value"]
+                for node in _parse_tree_nodes(values)
+                if isinstance(node["value"], (int, float))
+                and low <= node["value"] <= high
+            ]
+        if decision.get("highlight_first_path") and isinstance(expected, list):
+            first_path = expected[0] if expected and isinstance(expected[0], list) else []
+            active_indices = _tree_path_indices(values, first_path)
+        if decision.get("visit_order") and isinstance(expected, list):
+            badges = _tree_value_order(values, expected)
+        if title == "Maximum Depth of Binary Tree":
+            active_indices = _tree_depth_path(values)
+            caption_override = (
+                "The highlighted root-to-leaf path contains the maximum depth of "
+                f"{result} nodes."
+            )
+        elif title == "Minimum Depth of Binary Tree":
+            active_indices = _tree_depth_path(values, shortest=True)
+            caption_override = (
+                "The highlighted path reaches the nearest leaf at depth "
+                f"{result}."
+            )
+        elif title == "Diameter of Binary Tree":
+            active_indices = _tree_diameter_path(values)
+            caption_override = (
+                "The highlighted longest node-to-node path contains "
+                f"{result} edges."
+            )
+        elif title == "Binary Tree Maximum Path Sum":
+            active_indices = _tree_maximum_sum_path(values)
+            caption_override = (
+                "The highlighted connected path has the maximum node sum, "
+                f"{result}."
+            )
+        elif title == "Count Good Nodes in Binary Tree":
+            active_indices = _tree_good_node_indices(values)
+            caption_override = (
+                "Highlighted nodes are at least as large as every ancestor on "
+                f"their root path; there are {result}."
+            )
+        elif title in {"Path Sum", "Path Sum III"} and len(args) > 1:
+            active_indices = _tree_sum_path(
+                values,
+                argument(1),
+                root_to_leaf=title == "Path Sum",
+            )
+            caption_override = (
+                "The highlighted downward path reaches the example's target sum."
+                if active_indices
+                else "No qualifying downward path exists in this example."
+            )
+        elif title == "Count Nodes Equal to Average of Subtree":
+            active_indices = _tree_average_match_indices(values)
+            caption_override = (
+                "Each highlighted node equals the integer average of its own "
+                f"subtree; there are {result}."
+            )
+        elif title == "Sum of Nodes with Even-Valued Grandparent":
+            active_indices = _tree_even_grandparent_indices(values)
+            caption_override = (
+                "Highlighted nodes have an even-valued grandparent and contribute "
+                f"to the sum {result}."
+            )
+        elif title == "Find Leaves of Binary Tree":
+            badges = _tree_removal_rounds(values)
+            caption_override = (
+                "Each badge is the round in which that node becomes a leaf and "
+                "is removed."
+            )
+        if (
+            title == "Lowest Common Ancestor of Deepest Leaves"
+            and isinstance(expected, list)
+            and expected
+        ):
+            active_values = [expected[0]]
+            nodes = _parse_tree_nodes(values)
+            deepest = max((node["depth"] for node in nodes), default=0)
+            target_indices = [
+                index for index, node in enumerate(nodes)
+                if node["depth"] == deepest
+            ]
+            caption_override = (
+                "Orange nodes are the deepest leaves; the blue node is their "
+                "lowest common ancestor."
+            )
         return {
             "kind": "tree",
             "label": label,
             "values": values,
             "active_values": active_values,
+            "target_values": target_values,
+            "active_indices": active_indices,
+            "target_indices": target_indices,
+            "badges": badges,
+            "next_links": decision.get("next_links", False),
             "caption": (
-                (
+                caption_override
+                or (
                     "The diagram is the tree required by the first example's output."
                     if decision.get("source") == "expected"
-                    else "The nodes follow the first example's level-order representation; "
-                    f"the expected result is {result}."
+                    else (
+                        "Numbered badges show the required visit order."
+                        if badges
+                        else "The diagram preserves the exact parent-child structure "
+                        f"from the first example; the expected result is {result}."
+                    )
                 )
             ),
         }
@@ -1426,7 +3346,35 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
         }
 
     if requested_kind == "graph_auto":
-        edges = argument(decision.get("arg_index", 0), [])
+        raw_edges = argument(decision.get("arg_index", 0), [])
+        edges: list[list[Any]] = []
+        node_labels: list[Any] = []
+        if decision.get("adjacency_list"):
+            node_labels = list(range(1, len(raw_edges) + 1))
+            seen: set[tuple[Any, Any]] = set()
+            for start, neighbors in enumerate(raw_edges, start=1):
+                for end in neighbors:
+                    key = tuple(sorted((start, end), key=str))
+                    if key not in seen:
+                        seen.add(key)
+                        edges.append([start, end])
+        else:
+            external_weights = (
+                argument(decision["weight_arg_index"], [])
+                if decision.get("weight_arg_index") is not None
+                else []
+            )
+            for edge_index, edge in enumerate(raw_edges):
+                start, end = edge[:2]
+                if decision.get("reverse_edges"):
+                    start, end = end, start
+                normalized = [start, end]
+                if edge_index < len(external_weights):
+                    normalized.append(external_weights[edge_index])
+                elif len(edge) > 2:
+                    normalized.append(edge[2])
+                edges.append(normalized)
+
         directed = any(
             word in title
             for word in (
@@ -1435,17 +3383,64 @@ def _auto_visual_spec(problem: dict[str, Any]) -> dict[str, Any] | None:
                 "Network Delay",
                 "Reconstruct Itinerary",
                 "Alien Dictionary",
+                "Minimum Weighted Subgraph",
             )
+        )
+        if decision.get("node_count_arg_index") is not None:
+            count = int(argument(decision["node_count_arg_index"], 0))
+            node_labels = list(range(count))
+        elif title == "Network Delay Time" and len(args) > 1:
+            node_labels = list(range(1, int(args[1]) + 1))
+        elif decision.get("node_value_arg_index") is not None:
+            node_labels = list(range(len(argument(decision["node_value_arg_index"], []))))
+
+        active_edges: list[list[Any]] = []
+        active_nodes: list[Any] = []
+        if title == "Redundant Connection" and isinstance(expected, list):
+            active_edges = [expected]
+        if title == "Reconstruct Itinerary" and isinstance(expected, list):
+            active_edges = [
+                [expected[index], expected[index + 1]]
+                for index in range(len(expected) - 1)
+            ]
+            active_nodes = expected
+        if decision.get("active_node_arg_index") is not None:
+            flags = argument(decision["active_node_arg_index"], [])
+            active_nodes = [
+                index for index, is_active in enumerate(flags) if is_active
+            ]
+        if title == "Network Delay Time" and len(args) > 2:
+            active_nodes = [args[2]]
+
+        node_annotations: dict[Any, Any] = {}
+        if decision.get("node_value_arg_index") is not None:
+            node_values = argument(decision["node_value_arg_index"], [])
+            node_annotations = {
+                index: f"value {value}" for index, value in enumerate(node_values)
+            }
+        if title == "Minimum Time to Collect All Apples in a Tree":
+            node_annotations.update({node: "apple" for node in active_nodes})
+        if title == "Network Delay Time" and active_nodes:
+            node_annotations[active_nodes[0]] = "source"
+
+        weight_note = (
+            " Edge labels are the example's weights."
+            if any(len(edge) > 2 for edge in edges)
+            else ""
         )
         return {
             "kind": "graph_auto",
             "label": label,
             "edges": edges,
+            "node_labels": node_labels,
             "directed": directed,
+            "active_edges": active_edges,
+            "active_nodes": active_nodes,
+            "node_annotations": node_annotations,
             "caption": (
                 "The first example's connections are shown as "
                 f"{'directed' if directed else 'undirected'} edges; "
-                f"the expected result is {result}."
+                f"the expected result is {result}.{weight_note}"
             ),
         }
 
@@ -1578,12 +3573,15 @@ RENDERERS = {
     "intervals": _intervals,
     "graph": _graph,
     "houses": _houses,
+    "house_circle": _house_circle,
     "decodings": _decodings,
     "segments": _segments,
     "sequence_compare": _sequence_compare,
     "linked_list": _linked_list,
     "operations": _operations,
     "tree": _tree,
+    "tree_collection": _tree_collection,
+    "tree_list_compare": _tree_list_compare,
     "graph_auto": _graph_auto,
     "intervals_auto": _intervals_auto,
     "points": _points,
@@ -1597,6 +3595,8 @@ RENDERERS = {
     "trips": _trips,
     "buildings": _buildings,
     "matrix_pair": _matrix_pair,
+    "dp_table": _dp_table,
+    "stair_costs": _stair_costs,
 }
 
 
