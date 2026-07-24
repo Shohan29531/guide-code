@@ -2034,7 +2034,13 @@ st.markdown(
     /* LeetCode-style split solve workspace */
     [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker) {
         align-items: stretch;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
         gap: 0 !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+        width: 100% !important;
     }
     [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
     > [data-testid="stColumn"] {
@@ -2098,6 +2104,9 @@ st.markdown(
     [data-testid="stHorizontalBlock"]:has(.gc-code-bar-marker):not(:has(.gc-problem-pane-marker)),
     [data-testid="stHorizontalBlock"]:has(.gc-problem-bar-marker):not(:has(.gc-code-pane-marker)) {
         align-items: center;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
         background: rgba(255, 255, 255, .97);
         box-sizing: border-box;
         gap: 0 !important;
@@ -2398,6 +2407,9 @@ st.markdown(
     }
     [data-testid="stHorizontalBlock"]:has(.gc-console-actions-marker):not(:has(.gc-code-pane-marker)) {
         align-items: end;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
         background: #ffffff;
         gap: .4rem !important;
         margin-top: .2rem;
@@ -2527,53 +2539,71 @@ st.markdown(
         margin-top: .35rem;
         padding: .18rem .48rem;
     }
-    @media (min-width: 901px) {
-        [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
-        > [data-testid="stColumn"] {
-            box-sizing: border-box;
-            height: calc(100dvh - 1.1rem);
-            max-height: calc(100dvh - 1.1rem);
-            min-height: 340px;
-        }
-        [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
-        > [data-testid="stColumn"]:has(.gc-problem-pane-marker):not(:has(.gc-code-pane-marker)) {
-            overscroll-behavior-y: contain;
-            overflow-y: auto !important;
-            scroll-padding-bottom: 1.5rem;
-            scrollbar-color: #cbd5e1 transparent;
-            scrollbar-gutter: stable;
-            scrollbar-width: thin;
-            -webkit-overflow-scrolling: touch;
-        }
-        [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
-        > [data-testid="stColumn"]:has(.gc-code-pane-marker):not(:has(.gc-problem-pane-marker)),
-        [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
-        > [data-testid="stColumn"]:has(.gc-column-resizer-marker) {
-            overflow: hidden !important;
-        }
+    [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
+    > [data-testid="stColumn"] {
+        box-sizing: border-box;
+        height: calc(100dvh - 1.1rem);
+        max-height: calc(100dvh - 1.1rem);
+        min-height: 0;
+    }
+    [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
+    > [data-testid="stColumn"]:has(.gc-problem-pane-marker):not(:has(.gc-code-pane-marker)) {
+        overscroll-behavior-y: contain;
+        overflow-y: auto !important;
+        scroll-padding-bottom: 1.5rem;
+        scrollbar-color: #cbd5e1 transparent;
+        scrollbar-gutter: stable;
+        scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+    }
+    [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
+    > [data-testid="stColumn"]:has(.gc-code-pane-marker):not(:has(.gc-problem-pane-marker)),
+    [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
+    > [data-testid="stColumn"]:has(.gc-column-resizer-marker) {
+        overflow: hidden !important;
     }
     .gc-problem-pane-end {
         height: 1.25rem;
         width: 100%;
     }
     @media (max-width: 900px) {
-        html:has(.gc-practice-workspace-marker),
-        body:has(.gc-practice-workspace-marker),
-        .stApp:has(.gc-practice-workspace-marker),
-        .stApp:has(.gc-practice-workspace-marker) [data-testid="stAppViewContainer"],
-        .stApp:has(.gc-practice-workspace-marker) [data-testid="stMain"],
-        .stApp:has(.gc-practice-workspace-marker)
-        [data-testid="stMainBlockContainer"] {
-            height: auto !important;
-            max-height: none !important;
-            overflow: visible !important;
+        /* Browser zoom reduces the CSS viewport width. Keep the solve workspace
+           as a two-pane IDE instead of activating Streamlit's stacked layout. */
+        [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker) {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            min-width: 0 !important;
+            overflow: hidden !important;
+            width: 100% !important;
         }
-        .stApp:has(.gc-practice-workspace-marker)
-        [data-testid="stSidebarContent"] {
-            overflow-y: auto !important;
+        [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
+        > [data-testid="stColumn"]:has(.gc-problem-pane-marker):not(:has(.gc-code-pane-marker)) {
+            flex: 1 1 0 !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            width: 0 !important;
         }
-        [data-testid="stColumn"]:has(.gc-column-resizer-marker) {
-            display: none !important;
+        [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
+        > [data-testid="stColumn"]:has(.gc-column-resizer-marker) {
+            display: block !important;
+            flex: 0 0 12px !important;
+            max-width: 12px !important;
+            min-width: 12px !important;
+            width: 12px !important;
+        }
+        [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
+        > [data-testid="stColumn"]:has(.gc-code-pane-marker):not(:has(.gc-problem-pane-marker)) {
+            flex: 1.08 1 0 !important;
+            max-width: none !important;
+            min-width: 0 !important;
+            width: 0 !important;
+        }
+        [data-testid="stHorizontalBlock"]:has(.gc-code-bar-marker):not(:has(.gc-problem-pane-marker)),
+        [data-testid="stHorizontalBlock"]:has(.gc-console-actions-marker):not(:has(.gc-code-pane-marker)) {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
         }
     }
     @media (max-width: 700px) {
