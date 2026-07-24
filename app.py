@@ -3450,9 +3450,23 @@ LEETCODE_EDITOR_CSS = """
 .ace-streamlit-light .ace_variable.ace_parameter {
     color: #001080 !important;
 }
-.ace-streamlit-light .ace_indent-guide,
+.ace-streamlit-light .ace_indent-guide {
+    background-image: linear-gradient(
+        to right,
+        transparent calc(100% - 1px),
+        rgba(148, 163, 184, 0.32) calc(100% - 1px)
+    ) !important;
+    background-position: right top !important;
+    background-repeat: repeat-y !important;
+}
 .ace-streamlit-light .ace_indent-guide-active {
-    background: none !important;
+    background-image: linear-gradient(
+        to right,
+        transparent calc(100% - 1px),
+        rgba(100, 116, 139, 0.58) calc(100% - 1px)
+    ) !important;
+    background-position: right top !important;
+    background-repeat: repeat-y !important;
 }
 """
 
@@ -4333,7 +4347,7 @@ def render_code_workspace(
             "showLineNumbers": True,
             "fixedWidthGutter": True,
             "wrap": False,
-            "displayIndentGuides": False,
+            "displayIndentGuides": True,
             "cursorStyle": "line",
             "enableBasicAutocompletion": True,
             "enableLiveAutocompletion": False,
