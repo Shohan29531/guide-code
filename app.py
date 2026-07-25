@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+# UI build: topics-hints-v2-2026-07-24
+
 import ast
 import json
 import re
 from datetime import datetime
 from html import escape
+from urllib.parse import quote
 from typing import Any
 
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 from code_editor import code_editor
 
 from core.languages import LANGUAGES, LANGUAGE_BY_ID, starter_code
@@ -34,7 +38,70 @@ PROBLEM_ID_TO_TITLE = {
     problem["id"]: problem["title"]
     for problem in PROBLEMS
 }
+
 PROBLEM_PICKER_KEY = "practice_problem_picker"
+RELATED_PROBLEM_LIMIT = 6
+
+RELATED_GENERIC_TOPICS = {
+    "array",
+    "arrays and hashing",
+    "dynamic programming",
+    "hash table",
+    "math",
+    "simulation",
+    "sorting",
+    "string",
+}
+
+RELATED_GENERIC_WORDS = {
+    "array",
+    "dynamic",
+    "hash",
+    "math",
+    "programming",
+    "simulation",
+    "sorting",
+    "string",
+    "table",
+}
+
+RELATED_STOP_WORDS = {
+    "a",
+    "an",
+    "and",
+    "at",
+    "by",
+    "for",
+    "from",
+    "in",
+    "into",
+    "of",
+    "on",
+    "or",
+    "the",
+    "to",
+    "with",
+    "i",
+    "ii",
+    "iii",
+    "iv",
+    "v",
+}
+
+RELATED_WORD_ALIASES = {
+    "arrays": "array",
+    "graphs": "graph",
+    "heaps": "heap",
+    "intervals": "interval",
+    "matrices": "matrix",
+    "paths": "path",
+    "queues": "queue",
+    "stacks": "stack",
+    "strings": "string",
+    "trees": "tree",
+    "tries": "trie",
+}
+
 SHOW_GUIDED_SECTIONS = False
 
 st.set_page_config(
@@ -62,6 +129,28 @@ st.markdown(
         --gc-disabled-bg: #eef2f7;
         --gc-disabled-text: #475569;
         --gc-focus: #1d4ed8;
+    }
+    /* Remove the moving blue highlight from searchable dropdown options */
+    div[data-baseweb="popover"] [role="option"],
+    div[data-baseweb="menu"] [role="option"] {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    div[data-baseweb="popover"] [role="option"][aria-selected="true"],
+    div[data-baseweb="popover"] [role="option"]:focus,
+    div[data-baseweb="menu"] [role="option"][aria-selected="true"],
+    div[data-baseweb="menu"] [role="option"]:focus {
+        background-color: transparent !important;
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Remove the blue input focus rectangle while typing */
+    div[data-baseweb="select"] input:focus,
+    div[data-baseweb="select"] [role="combobox"]:focus {
+        outline: none !important;
+        box-shadow: none !important;
     }
 
     html, body, .stApp, [data-testid="stAppViewContainer"],
@@ -1957,6 +2046,51 @@ st.markdown(
         color: #05603a !important;
     }
 
+    /* Folded topics and separately leveled hints after the constraints */
+    .gc-after-constraints-space {
+        display: block;
+        width: 100%;
+    }
+    .gc-after-constraints-space .gc-gap-line {
+        display: block;
+        height: 1.45rem;
+        line-height: 1.45rem;
+        width: 100%;
+    }
+    .gc-topic-list {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: .42rem;
+        padding: .16rem 0 .35rem;
+    }
+    .gc-topic-pill {
+        align-items: center;
+        background: transparent;
+        border: 1px solid #b8c3d4;
+        border-radius: 999px;
+        color: #344054 !important;
+        display: inline-flex;
+        font-size: .76rem;
+        font-weight: 700;
+        line-height: 1.2;
+        padding: .2rem .52rem;
+    }
+    .gc-hint-body {
+        color: #344054 !important;
+        font-size: .91rem;
+        line-height: 1.5;
+        margin: .04rem 0 .28rem;
+    }
+    .gc-hint-body code {
+        background: #f3f4f6 !important;
+        border: 1px solid #e1e5eb;
+        border-radius: 4px;
+        color: #172033 !important;
+        font-size: .86em;
+        padding: .06rem .25rem;
+    }
+
     /* Compact problem picker */
     [data-testid="stVerticalBlock"][class*="st-key-problem_picker_bar"] {
         gap: 0 !important;
@@ -2935,6 +3069,39 @@ st.markdown(
         background-color: var(--gc-accent) !important;
     }
 
+    /* Related-problem links */
+    .gc-related-problem-list {
+        margin: 0;
+        padding: 0.15rem 0 0.25rem 1.5rem;
+    }
+
+    .gc-related-problem-list li {
+        margin-bottom: 0.48rem;
+        padding-left: 0.2rem;
+    }
+
+    .gc-related-problem-list li::marker {
+        color: #667085;
+        font-weight: 500;
+    }
+
+    .gc-related-problem-link {
+        color: #2563eb !important;
+        font-size: 0.95rem;
+        font-weight: 500;
+        line-height: 1.35;
+        text-decoration: none !important;
+    }
+
+    .gc-related-problem-link:visited {
+        color: #2563eb !important;
+    }
+
+    .gc-related-problem-link:hover {
+        color: #1d4ed8 !important;
+        text-decoration: underline !important;
+    }
+
     /* Prevent browser/OS dark mode from recoloring controls */
     input, textarea, select, button { color-scheme: light !important; }
     </style>
@@ -2951,7 +3118,10 @@ def initialize_state() -> None:
         "username": "learner",
         "current_problem_id": PROBLEMS[0]["id"],
         PROBLEM_PICKER_KEY: PROBLEMS[0]["title"],
+        "problem_view_nonce": 0,
+        "reset_problem_view": False,
     }
+
     for key, value in defaults.items():
         st.session_state.setdefault(key, value)
 
@@ -2959,17 +3129,289 @@ def initialize_state() -> None:
 initialize_state()
 
 
-def open_problem(problem_id: str) -> None:
+def activate_problem(problem_id: str) -> None:
+    """
+    Open a problem as a fresh Practice view.
+
+    This resets the problem-pane scroll position and gives all expanders
+    new widget identities so they start folded.
+    """
+    if problem_id not in PROBLEM_BY_ID:
+        return
+
     st.session_state.current_problem_id = problem_id
-    st.session_state[PROBLEM_PICKER_KEY] = PROBLEM_ID_TO_TITLE[problem_id]
+    st.session_state[PROBLEM_PICKER_KEY] = PROBLEM_ID_TO_TITLE[
+        problem_id
+    ]
     st.session_state.navigation = "Practice"
+
+    st.session_state.problem_view_nonce = (
+        int(st.session_state.get("problem_view_nonce", 0)) + 1
+    )
+    st.session_state.reset_problem_view = True
+
+
+def load_problem_from_query_parameter() -> None:
+    requested_problem_id = st.query_params.get("problem")
+
+    if not requested_problem_id:
+        return
+
+    if requested_problem_id not in PROBLEM_BY_ID:
+        st.query_params.clear()
+        return
+
+    activate_problem(requested_problem_id)
+
+    # Prevent the URL parameter from overriding later dropdown selections.
+    st.query_params.clear()
+
+
+load_problem_from_query_parameter()
+
+
+def open_problem(problem_id: str) -> None:
+    activate_problem(problem_id)
 
 
 def select_problem_from_picker() -> None:
     selected_title = st.session_state.get(PROBLEM_PICKER_KEY)
     selected_id = PROBLEM_TITLE_TO_ID.get(selected_title)
-    if selected_id:
-        st.session_state.current_problem_id = selected_id
+
+    if not selected_id:
+        return
+
+    if selected_id == st.session_state.current_problem_id:
+        return
+
+    activate_problem(selected_id)
+
+
+def reset_problem_pane_scroll() -> None:
+    if not st.session_state.get("reset_problem_view", False):
+        return
+
+    st.session_state.reset_problem_view = False
+
+    components.html(
+        """
+        <script>
+        function resetProblemPane() {
+            const parentDocument = window.parent.document;
+
+            const marker = parentDocument.querySelector(
+                ".gc-problem-pane-marker"
+            );
+
+            const problemPane = marker
+                ? marker.closest('[data-testid="stColumn"]')
+                : null;
+
+            if (problemPane) {
+                problemPane.scrollTop = 0;
+                problemPane.scrollLeft = 0;
+            }
+
+            window.parent.scrollTo(0, 0);
+        }
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(resetProblemPane);
+        });
+
+        setTimeout(resetProblemPane, 60);
+        setTimeout(resetProblemPane, 160);
+        </script>
+        """,
+        height=0,
+        width=0,
+    )
+
+
+
+def normalize_related_topic(value: Any) -> str:
+    return " ".join(
+        re.findall(r"[a-z0-9]+", str(value).casefold())
+    )
+
+
+def canonical_related_word(word: str) -> str:
+    return RELATED_WORD_ALIASES.get(word, word)
+
+
+def extract_related_words(values: list[Any]) -> set[str]:
+    words: set[str] = set()
+
+    for value in values:
+        raw_words = re.findall(
+            r"[a-z0-9]+",
+            str(value).casefold(),
+        )
+
+        for raw_word in raw_words:
+            if len(raw_word) <= 1:
+                continue
+
+            if raw_word in RELATED_STOP_WORDS:
+                continue
+
+            words.add(canonical_related_word(raw_word))
+
+    return words
+
+
+def get_related_problems(
+    problem: dict[str, Any],
+    limit: int = RELATED_PROBLEM_LIMIT,
+) -> list[tuple[dict[str, Any], str]]:
+    """
+    Return closely related problems ordered by relevance.
+
+    Generic overlap such as only Array is not enough. Problems must share a
+    specific topic, multiple topics, a specific topic word, or title terms.
+    """
+    source_tag_labels: dict[str, str] = {}
+
+    for tag in problem.get("tags", []):
+        normalized_tag = normalize_related_topic(tag)
+
+        if normalized_tag:
+            source_tag_labels[normalized_tag] = str(tag)
+
+    source_tags = set(source_tag_labels)
+
+    source_topic_words = extract_related_words(
+        list(problem.get("tags", []))
+    )
+
+    source_title_words = extract_related_words(
+        [problem.get("title", "")]
+    )
+
+    ranked: list[
+        tuple[float, str, dict[str, Any], str]
+    ] = []
+
+    for candidate in PROBLEMS:
+        if candidate["id"] == problem["id"]:
+            continue
+
+        candidate_tags: set[str] = set()
+
+        for tag in candidate.get("tags", []):
+            normalized_tag = normalize_related_topic(tag)
+
+            if normalized_tag:
+                candidate_tags.add(normalized_tag)
+
+        candidate_topic_words = extract_related_words(
+            list(candidate.get("tags", []))
+        )
+
+        candidate_title_words = extract_related_words(
+            [candidate.get("title", "")]
+        )
+
+        shared_tags = source_tags.intersection(candidate_tags)
+
+        shared_topic_words = source_topic_words.intersection(
+            candidate_topic_words
+        )
+
+        shared_title_words = source_title_words.intersection(
+            candidate_title_words
+        )
+
+        specific_shared_tags = shared_tags.difference(
+            RELATED_GENERIC_TOPICS
+        )
+
+        specific_shared_topic_words = (
+            shared_topic_words.difference(
+                RELATED_GENERIC_WORDS
+            )
+        )
+
+        is_closely_related = bool(
+            specific_shared_tags
+            or specific_shared_topic_words
+            or len(shared_tags) >= 2
+            or shared_title_words
+        )
+
+        if not is_closely_related:
+            continue
+
+        score = (
+            10 * len(specific_shared_tags)
+            + 5 * len(specific_shared_topic_words)
+            + 3 * len(shared_tags)
+            + 4 * len(shared_title_words)
+        )
+
+        if (
+            candidate.get("difficulty")
+            == problem.get("difficulty")
+        ):
+            score = score + 0.25
+
+        shared_topic_labels = sorted(
+            source_tag_labels[tag]
+            for tag in shared_tags
+            if tag in source_tag_labels
+        )
+
+        if shared_topic_labels:
+            displayed_topics = shared_topic_labels[:3]
+            reason = (
+                "Shared topics: "
+                + ", ".join(displayed_topics)
+            )
+
+        elif specific_shared_topic_words:
+            displayed_words = sorted(
+                word.upper()
+                if word in {"bfs", "dfs", "dp"}
+                else word.title()
+                for word in specific_shared_topic_words
+            )[:3]
+
+            reason = (
+                "Shared pattern: "
+                + ", ".join(displayed_words)
+            )
+
+        else:
+            displayed_words = sorted(
+                word.title()
+                for word in shared_title_words
+            )[:3]
+
+            reason = (
+                "Similar problem idea: "
+                + ", ".join(displayed_words)
+            )
+
+        ranked.append(
+            (
+                score,
+                str(candidate["title"]).casefold(),
+                candidate,
+                reason,
+            )
+        )
+
+    ranked.sort(
+        key=lambda item: (
+            -item[0],
+            item[1],
+        )
+    )
+
+    return [
+        (candidate, reason)
+        for _, _, candidate, reason in ranked[:limit]
+    ]
 
 
 def recommend_problem(dashboard: dict[str, Any]) -> dict[str, Any]:
@@ -3072,6 +3514,140 @@ def render_constraints(problem: dict[str, Any]) -> None:
         """,
         unsafe_allow_html=True,
     )
+
+
+def render_topics_and_hints(
+    problem: dict[str, Any],
+) -> None:
+    """
+    Render topics, related problems, and each hint in a separate fold.
+    """
+    view_nonce = int(
+    st.session_state.get("problem_view_nonce", 0)
+    )
+
+    topics = [
+        str(topic)
+        for topic in problem.get("tags", [])
+        if str(topic).strip()
+    ]
+
+    hints = [
+        str(hint)
+        for hint in problem.get("hints", [])
+        if str(hint).strip()
+    ]
+
+    related_problems = get_related_problems(problem)
+
+    st.markdown(
+        """
+        <div
+            class="gc-after-constraints-space"
+            aria-hidden="true"
+        >
+            <span class="gc-gap-line">&nbsp;</span>
+            <span class="gc-gap-line">&nbsp;</span>
+            <span class="gc-gap-line">&nbsp;</span>
+            <span class="gc-gap-line">&nbsp;</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.expander(
+        "Topics",
+        expanded=False,
+        key=(
+            f"topics::{problem['id']}::{view_nonce}"
+        ),
+    ):
+        topic_pills = "".join(
+            (
+                '<span class="gc-topic-pill">'
+                + escape(topic)
+                + "</span>"
+            )
+            for topic in topics
+        )
+
+        st.markdown(
+            (
+                '<div class="gc-topic-list">'
+                + topic_pills
+                + "</div>"
+            ),
+            unsafe_allow_html=True,
+        )
+
+    if related_problems:
+        with st.container(
+            key="related_problems_section",
+        ):
+            with st.expander(
+                "Related Problems",
+                expanded=False,
+                key=(
+                    f"related::{problem['id']}::{view_nonce}"
+                ),
+            ):
+                related_links = []
+
+                for related_problem, _ in related_problems:
+                    problem_id = quote(
+                        str(related_problem["id"]),
+                        safe="",
+                    )
+
+                    problem_title = escape(
+                        str(related_problem["title"])
+                    )
+
+                    related_links.append(
+                        (
+                            '<a class="gc-related-problem-link" '
+                            f'href="?problem={problem_id}" '
+                            'target="_self">'
+                            f"{problem_title}"
+                            "</a>"
+                        )
+                    )
+
+                st.markdown(
+                    (
+                        '<ol class="gc-related-problem-list">'
+                        + "".join(
+                            f"<li>{related_link}</li>"
+                            for related_link in related_links
+                        )
+                        + "</ol>"
+                    ),
+                    unsafe_allow_html=True,
+                )
+
+
+
+
+    for hint_number, hint in enumerate(
+        hints,
+        start=1,
+    ):
+        with st.expander(
+            f"Hint {hint_number}",
+            expanded=False,
+            key=(
+                f"hint::{problem['id']}::"
+                f"{hint_number}::{view_nonce}"
+            ),
+        ):
+            st.markdown(
+                (
+                    '<div class="gc-hint-body">'
+                    + inline_code_html(hint)
+                    + "</div>"
+                ),
+                unsafe_allow_html=True,
+            )
 
 
 def render_examples(problem: dict[str, Any]) -> None:
@@ -4527,28 +5103,50 @@ with st.sidebar:
         key="navigation",
         label_visibility="collapsed",
     )
-
     if st.session_state.navigation == "Practice":
-        problem_ids = [problem["id"] for problem in PROBLEMS]
-        if st.session_state.current_problem_id not in problem_ids:
+        problem_ids = [
+            problem["id"]
+            for problem in PROBLEMS
+        ]
+
+        if (
+            st.session_state.current_problem_id
+            not in problem_ids
+        ):
             st.session_state.current_problem_id = problem_ids[0]
-        active_title = PROBLEM_ID_TO_TITLE[st.session_state.current_problem_id]
-        picker_title = st.session_state.get(PROBLEM_PICKER_KEY)
+
+        active_title = PROBLEM_ID_TO_TITLE[
+            st.session_state.current_problem_id
+        ]
+
+        picker_title = st.session_state.get(
+            PROBLEM_PICKER_KEY
+        )
+
         if (
             picker_title not in PROBLEM_TITLE_TO_ID
             or PROBLEM_TITLE_TO_ID[picker_title]
             != st.session_state.current_problem_id
         ):
-            st.session_state[PROBLEM_PICKER_KEY] = active_title
+            st.session_state[
+                PROBLEM_PICKER_KEY
+            ] = active_title
+
         st.markdown(
-            '<div class="gc-sidebar-problem-label">Problem</div>',
+            (
+                '<div class="gc-sidebar-problem-label">'
+                "Problem"
+                "</div>"
+            ),
             unsafe_allow_html=True,
         )
+
         st.selectbox(
             "Choose a problem",
-            list(PROBLEM_TITLE_TO_ID),
+            options=list(PROBLEM_TITLE_TO_ID),
             key=PROBLEM_PICKER_KEY,
             on_change=select_problem_from_picker,
+            placeholder="Search or choose a problem",
             label_visibility="collapsed",
         )
 
@@ -4771,6 +5369,7 @@ else:
             ),
             unsafe_allow_html=True,
         )
+        reset_problem_pane_scroll()
         render_problem_header(problem)
         st.markdown(problem["description"])
         if SHOW_GUIDED_SECTIONS:
@@ -4789,6 +5388,7 @@ else:
 
         render_examples(problem)
         render_constraints(problem)
+        render_topics_and_hints(problem)
         st.markdown(
             '<div class="gc-problem-pane-end" aria-hidden="true"></div>',
             unsafe_allow_html=True,
