@@ -2540,13 +2540,13 @@ st.markdown(
         fill: #98a2b3 !important;
     }
     [data-testid="stHorizontalBlock"]:has(.gc-console-actions-marker):not(:has(.gc-code-pane-marker)) {
-        align-items: end;
+        align-items: center;
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: nowrap !important;
         background: #ffffff;
         gap: .4rem !important;
-        margin-top: .2rem;
+        margin-top: 0;
         position: relative;
         z-index: 2;
     }
@@ -2682,8 +2682,14 @@ st.markdown(
     }
     [data-testid="stHorizontalBlock"]:has(.gc-problem-pane-marker):has(.gc-code-pane-marker)
     > [data-testid="stColumn"]:has(.gc-problem-pane-marker):not(:has(.gc-code-pane-marker)) {
-        overscroll-behavior-y: contain;
+        overflow: hidden !important;
+    }
+    [data-testid="stVerticalBlock"][class*="st-key-problem_scroll--"] {
+        height: 100% !important;
+        max-height: 100% !important;
+        min-height: 0 !important;
         overflow-y: auto !important;
+        overscroll-behavior-y: contain;
         scroll-padding-bottom: 1.5rem;
         scrollbar-color: #cbd5e1 transparent;
         scrollbar-gutter: stable;
@@ -3119,7 +3125,6 @@ def initialize_state() -> None:
         "current_problem_id": PROBLEMS[0]["id"],
         PROBLEM_PICKER_KEY: PROBLEMS[0]["title"],
         "problem_view_nonce": 0,
-        "reset_problem_view": False,
     }
 
     for key, value in defaults.items():
@@ -3148,7 +3153,6 @@ def activate_problem(problem_id: str) -> None:
     st.session_state.problem_view_nonce = (
         int(st.session_state.get("problem_view_nonce", 0)) + 1
     )
-    st.session_state.reset_problem_view = True
 
 
 def load_problem_from_query_parameter() -> None:
@@ -3187,40 +3191,61 @@ def select_problem_from_picker() -> None:
     activate_problem(selected_id)
 
 
-def reset_problem_pane_scroll() -> None:
-    if not st.session_state.get("reset_problem_view", False):
-        return
-
-    st.session_state.reset_problem_view = False
+def render_problem_scroll_reset(view_nonce: int) -> None:
+    """Initialize the newly keyed problem pane at the top exactly once."""
+    pane_class = f"st-key-problem_scroll--{view_nonce}"
 
     components.html(
-        """
+        f"""
         <script>
-        function resetProblemPane() {
-            const parentDocument = window.parent.document;
+        (() => {{
+            const parentWindow = window.parent;
+            const parentDocument = parentWindow.document;
+            const paneClass = {json.dumps(pane_class)};
+            const selector =
+                `[data-testid="stVerticalBlock"].${{paneClass}}`;
 
-            const marker = parentDocument.querySelector(
-                ".gc-problem-pane-marker"
-            );
+            let observer = null;
+            let observerTimeout = null;
 
-            const problemPane = marker
-                ? marker.closest('[data-testid="stColumn"]')
-                : null;
+            function resetOnce() {{
+                const pane = parentDocument.querySelector(selector);
+                if (!pane) {{
+                    return false;
+                }}
 
-            if (problemPane) {
-                problemPane.scrollTop = 0;
-                problemPane.scrollLeft = 0;
-            }
+                // This container has a new Streamlit key for each problem.
+                // Set only its initial position; never keep overriding user
+                // scrolling after the pane has mounted.
+                pane.scrollTo({{
+                    top: 0,
+                    left: 0,
+                    behavior: "auto"
+                }});
 
-            window.parent.scrollTo(0, 0);
-        }
+                observer?.disconnect();
+                if (observerTimeout !== null) {{
+                    parentWindow.clearTimeout(observerTimeout);
+                }}
+                return true;
+            }}
 
-        requestAnimationFrame(() => {
-            requestAnimationFrame(resetProblemPane);
-        });
+            if (!resetOnce()) {{
+                observer = new MutationObserver(() => {{
+                    resetOnce();
+                }});
+                observer.observe(parentDocument.body, {{
+                    childList: true,
+                    subtree: true
+                }});
 
-        setTimeout(resetProblemPane, 60);
-        setTimeout(resetProblemPane, 160);
+                // The observer only waits for the newly keyed pane to mount.
+                // It never continues resetting an already visible pane.
+                observerTimeout = parentWindow.setTimeout(() => {{
+                    observer?.disconnect();
+                }}, 500);
+            }}
+        }})();
         </script>
         """,
         height=0,
@@ -4460,12 +4485,17 @@ def render_workspace_resizer(username: str, force_expand: bool = False) -> None:
                 color: #1d4ed8;
                 outline: none;
             }
-            #gc-console-toggle span {
+            #gc-console-toggle svg {
                 display: block;
+                flex: 0 0 auto;
+                height: 16px;
+                overflow: visible;
                 transform: rotate(0deg);
+                transform-origin: 50% 50%;
                 transition: transform .14s ease;
+                width: 16px;
             }
-            #gc-console-toggle[aria-expanded="false"] span {
+            #gc-console-toggle[aria-expanded="false"] svg {
                 transform: rotate(180deg);
             }
         </style>
@@ -4490,7 +4520,18 @@ def render_workspace_resizer(username: str, force_expand: bool = False) -> None:
                 aria-label="Minimize testcase panel"
                 aria-expanded="true"
                 title="Minimize testcase panel"
-            ><span>⌄</span></button>
+            >
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                    <path
+                        d="M3.25 5.75 8 10.5l4.75-4.75"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.8"
+                    />
+                </svg>
+            </button>
         </div>
         <script>
         (() => {
@@ -4595,7 +4636,10 @@ def render_workspace_resizer(username: str, force_expand: bool = False) -> None:
                         workspace.judgeHost.getBoundingClientRect().height
                     )
                     : 0;
-                const actionsHeight = workspace.actionsHost
+                const actionsHeight = (
+                    workspace.actionsHost
+                    && workspace.actionsHost !== workspace.judgeHost
+                )
                     ? Math.max(
                         workspace.actionsHost.scrollHeight,
                         workspace.actionsHost.getBoundingClientRect().height
@@ -4962,6 +5006,8 @@ def render_code_workspace(
         render_workspace_resizer(username, force_expand=force_expand)
 
     visible_case_count = min(3, len(problem["tests"]))
+    run_clicked = False
+    submit_clicked = False
 
     with st.container(key=f"testcase_region::{state_suffix}"):
         with st.container(
@@ -4972,39 +5018,18 @@ def render_code_workspace(
                 '<div class="gc-judge-panel-marker" aria-hidden="true"></div>',
                 unsafe_allow_html=True,
             )
-            console_view = st.segmented_control(
-                "Console",
-                ["Testcase", "Test Result"],
-                key=view_key,
-                label_visibility="collapsed",
-            )
 
-            if console_view == "Testcase":
-                selected_case = st.pills(
-                    "Testcases",
-                    options=list(range(visible_case_count)),
-                    format_func=lambda index: f"Case {index + 1}",
-                    key=case_key,
-                    label_visibility="collapsed",
-                )
-                if selected_case is None:
-                    selected_case = 0
-                render_testcase_fields(
-                    problem,
-                    list(problem["tests"][int(selected_case)]["args"]),
-                )
-            else:
-                render_console_result(
-                    problem,
-                    st.session_state.get(result_key),
-                )
-
-        with st.container(key=f"judge_actions::{state_suffix}"):
-            action_spacer, run_col, submit_col = st.columns([2.5, 1.15, 1.35])
-            with action_spacer:
+            tabs_col, run_col, submit_col = st.columns([2.5, 1.15, 1.35])
+            with tabs_col:
                 st.markdown(
                     '<div class="gc-console-actions-marker" aria-hidden="true"></div>',
                     unsafe_allow_html=True,
+                )
+                console_view = st.segmented_control(
+                    "Console",
+                    ["Testcase", "Test Result"],
+                    key=view_key,
+                    label_visibility="collapsed",
                 )
             with run_col:
                 st.markdown(
@@ -5030,6 +5055,26 @@ def render_code_workspace(
                     width="stretch",
                     on_click=set_console_view,
                     args=(view_key, "Test Result"),
+                )
+
+            if console_view == "Testcase":
+                selected_case = st.pills(
+                    "Testcases",
+                    options=list(range(visible_case_count)),
+                    format_func=lambda index: f"Case {index + 1}",
+                    key=case_key,
+                    label_visibility="collapsed",
+                )
+                if selected_case is None:
+                    selected_case = 0
+                render_testcase_fields(
+                    problem,
+                    list(problem["tests"][int(selected_case)]["args"]),
+                )
+            else:
+                render_console_result(
+                    problem,
+                    st.session_state.get(result_key),
                 )
 
     if run_clicked:
@@ -5362,37 +5407,55 @@ else:
     )
 
     with problem_col:
-        st.markdown(
-            (
-                '<div class="gc-problem-pane-marker gc-problem-pane-anchor" '
-                'aria-hidden="true"></div>'
-            ),
-            unsafe_allow_html=True,
+        # The left pane itself is recreated whenever a problem is activated.
+        # A fresh DOM node always starts at scrollTop = 0, so Streamlit cannot
+        # carry the previous problem's internal scroll position into this one.
+        problem_view_nonce = int(
+            st.session_state.get("problem_view_nonce", 0)
         )
-        reset_problem_pane_scroll()
-        render_problem_header(problem)
-        st.markdown(problem["description"])
-        if SHOW_GUIDED_SECTIONS:
+        with st.container(
+            key=f"problem_scroll::{problem_view_nonce}",
+            height="stretch",
+        ):
             st.markdown(
-                '<div class="gc-before-predict" aria-hidden="true"></div>',
+                (
+                    '<div class="gc-problem-pane-marker '
+                    'gc-problem-pane-anchor" aria-hidden="true"></div>'
+                ),
                 unsafe_allow_html=True,
             )
+            render_problem_scroll_reset(problem_view_nonce)
+            render_problem_header(problem)
+            st.markdown(problem["description"])
+            if SHOW_GUIDED_SECTIONS:
+                st.markdown(
+                    '<div class="gc-before-predict" '
+                    'aria-hidden="true"></div>',
+                    unsafe_allow_html=True,
+                )
 
-            st.markdown("### Predict before you peek")
-            with st.expander("Open prediction exercise", expanded=False):
-                render_active_recall(username, problem)
+                st.markdown("### Predict before you peek")
+                with st.expander(
+                    "Open prediction exercise",
+                    expanded=False,
+                ):
+                    render_active_recall(username, problem)
 
-            st.markdown("### Plan checkpoint")
-            with st.expander("Open planning prompts", expanded=False):
-                render_guided_reasoning(username, problem)
+                st.markdown("### Plan checkpoint")
+                with st.expander(
+                    "Open planning prompts",
+                    expanded=False,
+                ):
+                    render_guided_reasoning(username, problem)
 
-        render_examples(problem)
-        render_constraints(problem)
-        render_topics_and_hints(problem)
-        st.markdown(
-            '<div class="gc-problem-pane-end" aria-hidden="true"></div>',
-            unsafe_allow_html=True,
-        )
+            render_examples(problem)
+            render_constraints(problem)
+            render_topics_and_hints(problem)
+            st.markdown(
+                '<div class="gc-problem-pane-end" '
+                'aria-hidden="true"></div>',
+                unsafe_allow_html=True,
+            )
 
     with divider_col:
         st.markdown(
