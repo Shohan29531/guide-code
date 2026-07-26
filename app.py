@@ -42,6 +42,17 @@ PROBLEM_ID_TO_TITLE = {
 PROBLEM_PICKER_KEY = "practice_problem_picker"
 RELATED_PROBLEM_LIMIT = 6
 
+NAVIGATION_TO_ROUTE = {
+    "Dashboard": "dashboard",
+    "Practice": "practice",
+    "Problem Library": "problem-set",
+}
+ROUTE_TO_NAVIGATION = {
+    route: navigation
+    for navigation, route in NAVIGATION_TO_ROUTE.items()
+}
+DEFAULT_ROUTE = NAVIGATION_TO_ROUTE["Dashboard"]
+
 RELATED_GENERIC_TOPICS = {
     "array",
     "arrays and hashing",
@@ -315,7 +326,7 @@ st.markdown(
     }
     .gc-sidebar-problem-label {
         color: #344054 !important;
-        font-size: .72rem;
+        font-size: .792rem;
         font-weight: 750;
         letter-spacing: .02em;
         margin: .7rem 0 .28rem;
@@ -330,7 +341,7 @@ st.markdown(
         min-height: 2.1rem !important;
     }
     [data-testid="stSidebar"] .react-aria-ComboBox input[role="combobox"] {
-        font-size: .8rem !important;
+        font-size: .88rem !important;
     }
 
     .gc-hero {
@@ -342,7 +353,7 @@ st.markdown(
         margin-bottom: .55rem;
     }
     .gc-eyebrow {
-        font-size: .76rem;
+        font-size: .836rem;
         text-transform: uppercase;
         letter-spacing: .12em;
         color: var(--gc-accent-dark) !important;
@@ -350,7 +361,7 @@ st.markdown(
     }
     .gc-title {
         color: var(--gc-text) !important;
-        font-size: 1.7rem;
+        font-size: 1.87rem;
         line-height: 1.1;
         font-weight: 760;
         margin: .15rem 0 .3rem;
@@ -360,7 +371,7 @@ st.markdown(
         border: 1px solid transparent;
         border-radius: 999px;
         display: inline-flex;
-        font-size: .76rem;
+        font-size: .836rem;
         font-weight: 700;
         line-height: 1.2;
         margin-top: .2rem;
@@ -390,12 +401,12 @@ st.markdown(
         padding: .2rem 0 .9rem;
     }
     .gc-problem-hero .gc-title {
-        font-size: 1.68rem;
+        font-size: 1.848rem;
         margin: 0 0 .18rem;
     }
     .gc-subtitle {
         color: var(--gc-muted) !important;
-        font-size: .88rem;
+        font-size: .968rem;
         line-height: 1.4;
         max-width: 820px;
     }
@@ -406,7 +417,7 @@ st.markdown(
         background: var(--gc-accent-soft);
         border-radius: 8px;
         color: var(--gc-text) !important;
-        font-size: 1.04rem;
+        font-size: 1.144rem;
     }
     .gc-pass { font-weight: 700; }
 
@@ -430,7 +441,7 @@ st.markdown(
         color: #526071;
         display: flex;
         flex-wrap: wrap;
-        font-size: .66rem;
+        font-size: .726rem;
         gap: .3rem .75rem;
         line-height: 1.2;
         margin-top: .42rem;
@@ -486,7 +497,7 @@ st.markdown(
     .gc-vis-legend-item i.tone-4 { background: #f2eaff; border-color: #9a82ca; }
     .gc-problem-visual figcaption {
         color: #526071;
-        font-size: .78rem;
+        font-size: .858rem;
         line-height: 1.35;
         margin-top: .32rem;
     }
@@ -514,7 +525,7 @@ st.markdown(
     .gc-vis-cell-wrap > span {
         color: #667085;
         display: block;
-        font-size: .7rem;
+        font-size: .77rem;
         line-height: 1.1;
         margin-top: .22rem;
         min-height: .8rem;
@@ -529,7 +540,7 @@ st.markdown(
         color: #172033;
         display: flex;
         font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
-        font-size: .8rem;
+        font-size: .88rem;
         font-weight: 700;
         height: 2.1rem;
         justify-content: center;
@@ -617,7 +628,7 @@ st.markdown(
     }
     .gc-vis-bar-marker {
         color: #344054;
-        font-size: .7rem;
+        font-size: .77rem;
         font-weight: 700;
         left: 50%;
         position: absolute;
@@ -628,13 +639,13 @@ st.markdown(
     .gc-vis-bar-value {
         color: #344054;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .7rem;
+        font-size: .77rem;
         font-weight: 700;
         margin-top: .1rem;
     }
     .gc-vis-bar-index {
         color: #667085;
-        font-size: .7rem;
+        font-size: .77rem;
         white-space: nowrap;
     }
     .gc-vis-bar-span {
@@ -657,7 +668,7 @@ st.markdown(
     .gc-vis-bar-span::after { right: 0; }
     .gc-vis-bar-span span {
         color: #344054;
-        font-size: .7rem;
+        font-size: .77rem;
         left: 50%;
         position: absolute;
         top: -1.05rem;
@@ -686,7 +697,7 @@ st.markdown(
         color: #344054;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .76rem;
+        font-size: .836rem;
         font-weight: 700;
         height: var(--gc-grid-cell-height);
         justify-content: center;
@@ -699,7 +710,7 @@ st.markdown(
     .gc-vis-grid-cell small {
         color: #345995;
         font-family: inherit;
-        font-size: .7rem;
+        font-size: .77rem;
         position: absolute;
         right: .18rem;
         top: .1rem;
@@ -747,7 +758,7 @@ st.markdown(
     .gc-vis-side-label {
         color: #667085;
         display: block;
-        font-size: .7rem;
+        font-size: .77rem;
         font-weight: 700;
         margin-bottom: .22rem;
         text-align: center;
@@ -756,7 +767,7 @@ st.markdown(
     .gc-vis-arrow {
         color: #667085;
         flex: 0 0 auto;
-        font-size: 1.15rem;
+        font-size: 1.265rem;
     }
     .gc-vis-product {
         align-items: center;
@@ -771,7 +782,7 @@ st.markdown(
         border-radius: 4px;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .82rem;
+        font-size: .902rem;
         font-weight: 700;
         height: 2.15rem;
         justify-content: center;
@@ -789,7 +800,7 @@ st.markdown(
     }
     .gc-vis-product-note {
         color: #667085;
-        font-size: .72rem;
+        font-size: .792rem;
         margin-left: .25rem;
     }
     .gc-vis-water {
@@ -817,7 +828,7 @@ st.markdown(
     }
     .gc-vis-water-line span {
         color: #526071;
-        font-size: .7rem;
+        font-size: .77rem;
         left: 50%;
         position: absolute;
         top: -1rem;
@@ -861,13 +872,13 @@ st.markdown(
     }
     .gc-vis-step span {
         color: #526071;
-        font-size: .7rem;
+        font-size: .77rem;
     }
     .gc-vis-step-moves {
         color: #245bb5;
         display: flex;
         flex-direction: column;
-        font-size: .72rem;
+        font-size: .792rem;
         font-weight: 700;
         gap: .85rem;
         position: absolute;
@@ -910,24 +921,24 @@ st.markdown(
         color: #344054;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .7rem;
+        font-size: .77rem;
         height: calc(13px + var(--gc-portion) * 9px);
         justify-content: center;
     }
     .gc-vis-pile strong {
         color: #344054;
-        font-size: .76rem;
+        font-size: .836rem;
         margin-top: .18rem;
     }
     .gc-vis-pile small {
         color: #667085;
-        font-size: .7rem;
+        font-size: .77rem;
     }
     .gc-vis-speed {
         bottom: 0;
         color: #526071;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .7rem;
+        font-size: .77rem;
         left: 0;
         position: absolute;
     }
@@ -943,7 +954,7 @@ st.markdown(
     }
     .gc-vis-intervals > div > span {
         color: #667085;
-        font-size: .7rem;
+        font-size: .77rem;
         font-weight: 700;
         text-transform: uppercase;
     }
@@ -962,7 +973,7 @@ st.markdown(
         color: #173b78;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .7rem;
+        font-size: .77rem;
         height: 1.35rem;
         justify-content: center;
         min-width: 2.8rem;
@@ -985,7 +996,7 @@ st.markdown(
     }
     .gc-vis-interval-down {
         color: #667085;
-        font-size: .85rem;
+        font-size: .935rem;
         line-height: .6;
         margin-left: 3.7rem;
     }
@@ -1039,7 +1050,7 @@ st.markdown(
         border-radius: 3px;
         color: #344054;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .6rem;
+        font-size: .66rem;
         line-height: 1;
         padding: .13rem .22rem;
         position: absolute;
@@ -1056,7 +1067,7 @@ st.markdown(
         color: #344054;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .75rem;
+        font-size: .825rem;
         font-weight: 700;
         height: 1.88rem;
         justify-content: center;
@@ -1103,7 +1114,7 @@ st.markdown(
         background: rgba(255, 255, 255, .94);
         border-radius: 3px;
         color: #526071;
-        font-size: .58rem;
+        font-size: .638rem;
         font-weight: 650;
         left: 50%;
         line-height: 1.15;
@@ -1149,7 +1160,7 @@ st.markdown(
         color: #344054;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .75rem;
+        font-size: .825rem;
         font-weight: 700;
         height: 2.25rem;
         justify-content: center;
@@ -1161,7 +1172,7 @@ st.markdown(
     }
     .gc-vis-house small {
         color: #667085;
-        font-size: .65rem;
+        font-size: .715rem;
         margin-top: .16rem;
     }
     .gc-vis-house-circle {
@@ -1192,11 +1203,11 @@ st.markdown(
     }
     .gc-vis-circle-house b {
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .7rem;
+        font-size: .77rem;
     }
     .gc-vis-circle-house small {
         color: #667085;
-        font-size: .5rem;
+        font-size: .55rem;
     }
     .gc-vis-decodings {
         align-items: center;
@@ -1210,7 +1221,7 @@ st.markdown(
         border: 1px solid #d8dee8;
         border-radius: 4px;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: 1rem;
+        font-size: 1.1rem;
         padding: .55rem .65rem;
     }
     .gc-vis-decoding-row {
@@ -1218,7 +1229,7 @@ st.markdown(
         color: #344054;
         display: grid;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .76rem;
+        font-size: .836rem;
         gap: .55rem;
         grid-template-columns: minmax(3rem, auto) auto minmax(3rem, auto);
         margin: .2rem 0;
@@ -1236,7 +1247,7 @@ st.markdown(
         border-radius: 4px;
         color: #344054;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .78rem;
+        font-size: .858rem;
         font-weight: 700;
         padding: .42rem .55rem;
     }
@@ -1250,7 +1261,7 @@ st.markdown(
     }
     .gc-vis-sequence-arrow {
         color: #7f8b9c;
-        font-size: .9rem;
+        font-size: .99rem;
         line-height: 1;
         padding-left: .65rem;
     }
@@ -1267,7 +1278,7 @@ st.markdown(
     }
     .gc-vis-linked-group > small {
         color: #667085;
-        font-size: .68rem;
+        font-size: .748rem;
         font-weight: 700;
         text-transform: uppercase;
     }
@@ -1288,7 +1299,7 @@ st.markdown(
         display: inline-flex;
         flex-direction: column;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .75rem;
+        font-size: .825rem;
         height: 2.1rem;
         justify-content: center;
         min-width: 2.1rem;
@@ -1301,13 +1312,13 @@ st.markdown(
     }
     .gc-vis-list-node small {
         color: #667085;
-        font-size: .54rem;
+        font-size: .594rem;
         line-height: .7rem;
     }
     .gc-vis-list-arrow,
     .gc-vis-list-more {
         color: #7f8b9c;
-        font-size: .82rem;
+        font-size: .902rem;
     }
     .gc-vis-operations {
         display: grid;
@@ -1319,7 +1330,7 @@ st.markdown(
         border-bottom: 1px solid #e7eaf0;
         color: #526071;
         display: grid;
-        font-size: .72rem;
+        font-size: .792rem;
         gap: .45rem;
         grid-template-columns: minmax(5.8rem, 1fr) minmax(3.6rem, 1fr) auto minmax(3.6rem, 1fr);
         min-width: 0;
@@ -1343,7 +1354,7 @@ st.markdown(
     }
     .gc-vis-operation-more {
         color: #667085;
-        font-size: .7rem;
+        font-size: .77rem;
         padding-top: .3rem;
     }
     .gc-vis-tree-block {
@@ -1393,7 +1404,7 @@ st.markdown(
     .gc-vis-list-loop {
         color: #667085;
         display: block;
-        font-size: .68rem;
+        font-size: .748rem;
         font-weight: 700;
         margin-top: .35rem;
     }
@@ -1406,7 +1417,7 @@ st.markdown(
         color: #344054;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .72rem;
+        font-size: .792rem;
         font-weight: 700;
         height: 1.9rem;
         justify-content: center;
@@ -1436,7 +1447,7 @@ st.markdown(
         border-radius: 50%;
         color: #fff;
         display: flex;
-        font-size: .5rem;
+        font-size: .55rem;
         height: .9rem;
         justify-content: center;
         position: absolute;
@@ -1473,7 +1484,7 @@ st.markdown(
     }
     .gc-vis-empty {
         color: #667085;
-        font-size: .75rem;
+        font-size: .825rem;
     }
     .gc-vis-points {
         height: 145px;
@@ -1518,7 +1529,7 @@ st.markdown(
     .gc-vis-point small {
         color: #526071;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .62rem;
+        font-size: .682rem;
         left: .58rem;
         position: absolute;
         top: -.55rem;
@@ -1536,7 +1547,7 @@ st.markdown(
         aspect-ratio: 1;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .7rem;
+        font-size: .77rem;
         justify-content: center;
     }
     .gc-vis-string-grid > b {
@@ -1567,7 +1578,7 @@ st.markdown(
     .gc-vis-dp-table th,
     .gc-vis-dp-table td {
         border: 0;
-        font-size: .65rem;
+        font-size: .715rem;
         height: 1.65rem;
         min-width: 1.65rem;
         padding: 0 .15rem;
@@ -1625,7 +1636,7 @@ st.markdown(
         border-radius: 4px;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .7rem;
+        font-size: .77rem;
         height: 1.7rem;
         justify-content: center;
         min-width: 1.7rem;
@@ -1666,7 +1677,7 @@ st.markdown(
     }
     .gc-vis-clock > span {
         color: #526071;
-        font-size: .65rem;
+        font-size: .715rem;
         position: absolute;
         transform: translate(-50%, -50%);
     }
@@ -1704,7 +1715,7 @@ st.markdown(
     .gc-vis-paired-legend {
         color: #667085;
         display: flex;
-        font-size: .68rem;
+        font-size: .748rem;
         gap: 1rem;
         margin-bottom: .3rem;
     }
@@ -1746,7 +1757,7 @@ st.markdown(
     .gc-vis-paired-group small {
         bottom: -1rem;
         color: #667085;
-        font-size: .62rem;
+        font-size: .682rem;
         grid-column: 1 / -1;
         left: 50%;
         position: absolute;
@@ -1779,12 +1790,12 @@ st.markdown(
     }
     .gc-vis-book-shelf b {
         color: #173b78;
-        font-size: .62rem;
+        font-size: .682rem;
     }
     .gc-vis-book-shelf small {
         bottom: -1rem;
         color: #667085;
-        font-size: .52rem;
+        font-size: .572rem;
         left: 50%;
         position: absolute;
         transform: translateX(-50%);
@@ -1813,13 +1824,13 @@ st.markdown(
         color: #173b78;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .68rem;
+        font-size: .748rem;
         justify-content: center;
         width: 72%;
     }
     .gc-vis-cost-step small {
         color: #667085;
-        font-size: .56rem;
+        font-size: .616rem;
         margin-top: .15rem;
         white-space: nowrap;
     }
@@ -1836,7 +1847,7 @@ st.markdown(
     }
     .gc-vis-trip-row > b {
         color: #526071;
-        font-size: .62rem;
+        font-size: .682rem;
         left: 0;
         position: absolute;
         top: -.08rem;
@@ -1850,7 +1861,7 @@ st.markdown(
         color: #173b78;
         display: flex;
         font-family: SFMono-Regular, Consolas, monospace;
-        font-size: .62rem;
+        font-size: .682rem;
         height: 1.15rem;
         justify-content: center;
         min-width: 3.2rem;
@@ -1875,7 +1886,7 @@ st.markdown(
     }
     .gc-vis-buildings small {
         color: #344054;
-        font-size: .56rem;
+        font-size: .616rem;
         left: 50%;
         position: absolute;
         top: .12rem;
@@ -1893,13 +1904,13 @@ st.markdown(
     }
     .gc-vis-matrix-pair > b {
         color: #667085;
-        font-size: 1rem;
+        font-size: 1.1rem;
     }
 
     /* Worked examples */
     .gc-io-label {
         color: #526071 !important;
-        font-size: .72rem;
+        font-size: .792rem;
         font-weight: 750;
         letter-spacing: .095em;
         text-transform: uppercase;
@@ -1925,7 +1936,7 @@ st.markdown(
     }
     .gc-example-title {
         color: var(--gc-text) !important;
-        font-size: .92rem;
+        font-size: 1.012rem;
         font-weight: 700;
         line-height: 1.2;
         margin: 0;
@@ -1951,7 +1962,7 @@ st.markdown(
         border-radius: 0;
         box-sizing: border-box;
         color: #172033 !important;
-        font-size: .91rem;
+        font-size: 1.001rem;
         line-height: 1.4;
         margin: .06rem 0 0 !important;
         max-width: 100%;
@@ -1977,20 +1988,94 @@ st.markdown(
         border: 0;
         border-radius: 0;
         margin: .28rem 0 0;
+        min-width: 0;
         padding: 0;
+        width: 100%;
     }
-    .gc-explanation p {
+    .gc-explanation-body {
+        display: grid;
+        gap: .34rem;
+        margin: .08rem 0 0;
+        min-width: 0;
+        width: 100%;
+    }
+    .gc-explanation-line {
         color: #172033 !important;
-        font-size: .91rem;
-        line-height: 1.4;
-        margin: .06rem 0 0;
+        font-size: 1.001rem;
+        line-height: 1.48;
+        min-width: 0;
+        overflow-wrap: anywhere;
+        white-space: normal;
+        word-break: normal;
     }
-    .gc-explanation code {
-        background: #e6efff !important;
+    .gc-explanation-line.is-bullet {
+        padding-left: 1rem;
+        position: relative;
+    }
+    .gc-explanation-line.is-bullet::before {
+        color: #526071;
+        content: "•";
+        left: .1rem;
+        position: absolute;
+        top: 0;
+    }
+    .gc-explanation code,
+    .gc-explanation-token {
+        -webkit-box-decoration-break: clone;
+        background: var(--gc-code-bg) !important;
         border-radius: 4px;
+        box-decoration-break: clone;
         color: #172033 !important;
-        font-size: .86em;
+        font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
+        font-size: .946em;
+        overflow-wrap: anywhere;
         padding: .08rem .28rem;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    .gc-explanation-trace {
+        border: 1px solid #e1e7f0;
+        border-radius: 10px;
+        display: grid;
+        margin-top: .14rem;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        width: min(100%, 46rem);
+    }
+    .gc-explanation-trace-row {
+        align-items: start;
+        display: grid;
+        gap: .7rem;
+        grid-template-columns: minmax(0, 1fr) minmax(4.5rem, auto);
+        min-width: 0;
+        padding: .52rem .65rem;
+    }
+    .gc-explanation-trace-row + .gc-explanation-trace-row {
+        border-top: 1px solid #e6ebf2;
+    }
+    .gc-explanation-trace-row.is-header {
+        background: #f7f9fc;
+        color: #526071 !important;
+        font-size: .748rem;
+        font-weight: 750;
+        letter-spacing: .075em;
+        text-transform: uppercase;
+    }
+    .gc-explanation-trace-window,
+    .gc-explanation-trace-result {
+        min-width: 0;
+    }
+    .gc-explanation-trace-result {
+        text-align: right;
+    }
+    @media (max-width: 650px) {
+        .gc-explanation-trace-row {
+            grid-template-columns: minmax(0, 1fr);
+        }
+        .gc-explanation-trace-result {
+            text-align: left;
+        }
     }
 
     /* Constraints and output rules */
@@ -1999,7 +2084,7 @@ st.markdown(
     }
     .gc-constraints-title {
         color: var(--gc-text) !important;
-        font-size: 1.2rem;
+        font-size: 1.32rem;
         font-weight: 700;
         line-height: 1.25;
         margin: .12rem 0 .4rem;
@@ -2012,7 +2097,7 @@ st.markdown(
     .gc-constraint-item {
         color: #344054 !important;
         display: list-item;
-        font-size: .91rem;
+        font-size: 1.001rem;
         line-height: 1.4;
         margin: 0 0 .3rem;
         padding-left: .15rem;
@@ -2024,7 +2109,7 @@ st.markdown(
         border-radius: 5px;
         display: inline-block;
         font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
-        font-size: .85em;
+        font-size: .935em;
         font-weight: 650;
         line-height: 1.35;
         margin: 0 .05rem;
@@ -2071,14 +2156,14 @@ st.markdown(
         border-radius: 999px;
         color: #344054 !important;
         display: inline-flex;
-        font-size: .76rem;
+        font-size: .836rem;
         font-weight: 700;
         line-height: 1.2;
         padding: .2rem .52rem;
     }
     .gc-hint-body {
         color: #344054 !important;
-        font-size: .91rem;
+        font-size: 1.001rem;
         line-height: 1.5;
         margin: .04rem 0 .28rem;
     }
@@ -2087,7 +2172,7 @@ st.markdown(
         border: 1px solid #e1e5eb;
         border-radius: 4px;
         color: #172033 !important;
-        font-size: .86em;
+        font-size: .946em;
         padding: .06rem .25rem;
     }
 
@@ -2130,7 +2215,7 @@ st.markdown(
         box-sizing: border-box;
         color: #344054;
         display: flex;
-        font-size: .8rem;
+        font-size: .88rem;
         font-weight: 700;
         height: 2rem;
         line-height: 1;
@@ -2152,7 +2237,7 @@ st.markdown(
     }
     [data-testid="stHorizontalBlock"]:has(.gc-problem-picker-label)
     .react-aria-ComboBox input[role="combobox"] {
-        font-size: .8rem !important;
+        font-size: .88rem !important;
         height: 1.9rem !important;
         min-height: 0 !important;
         padding: .25rem .45rem !important;
@@ -2231,7 +2316,7 @@ st.markdown(
     }
     .gc-pane-title {
         color: #172033 !important;
-        font-size: .86rem;
+        font-size: .946rem;
         font-weight: 750;
         line-height: 1;
     }
@@ -2323,7 +2408,7 @@ st.markdown(
         border: 1px solid #d0d5dd !important;
         border-radius: 5px !important;
         box-shadow: none !important;
-        font-size: .78rem !important;
+        font-size: .858rem !important;
         height: 1.65rem !important;
         min-height: 1.65rem !important;
     }
@@ -2333,7 +2418,7 @@ st.markdown(
     }
     [data-testid="stHorizontalBlock"]:has(.gc-code-bar-marker):not(:has(.gc-problem-pane-marker))
     .react-aria-ComboBox input[role="combobox"] {
-        font-size: .78rem !important;
+        font-size: .858rem !important;
         height: 1.55rem !important;
         min-height: 0 !important;
         padding: .2rem .38rem !important;
@@ -2445,7 +2530,7 @@ st.markdown(
     }
     .gc-console-empty {
         color: #667085 !important;
-        font-size: .82rem;
+        font-size: .902rem;
         padding: .65rem .1rem;
     }
     [data-testid="stVerticalBlock"][class*="st-key-judge_panel--"]
@@ -2458,7 +2543,7 @@ st.markdown(
         border: 0 !important;
         border-radius: 5px !important;
         color: #172033 !important;
-        font-size: .8rem !important;
+        font-size: .88rem !important;
         line-height: 1.35 !important;
         min-height: 2.1rem;
         padding: .38rem .5rem !important;
@@ -2482,7 +2567,7 @@ st.markdown(
         margin-bottom: .12rem !important;
     }
     .gc-console-status strong {
-        font-size: .94rem;
+        font-size: 1.034rem;
         line-height: 1.3;
     }
     .gc-console-status.is-pass strong {
@@ -2493,14 +2578,14 @@ st.markdown(
     }
     .gc-console-status span {
         color: #667085 !important;
-        font-size: .76rem;
+        font-size: .836rem;
     }
     .gc-console-error {
         background: #fef3f2;
         border-radius: 5px;
         color: #b42318 !important;
         font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
-        font-size: .76rem;
+        font-size: .836rem;
         margin-top: .4rem;
         padding: .5rem .55rem;
         white-space: pre-wrap;
@@ -2510,7 +2595,7 @@ st.markdown(
         background: #f2f3f5 !important;
         border-color: #d0d5dd !important;
         color: #344054 !important;
-        font-size: .8rem !important;
+        font-size: .88rem !important;
         height: 2.25rem !important;
         min-height: 2.25rem !important;
         padding: 0 .5rem !important;
@@ -2520,7 +2605,7 @@ st.markdown(
         background: #2cbb5d !important;
         border-color: #2cbb5d !important;
         color: #ffffff !important;
-        font-size: .8rem !important;
+        font-size: .88rem !important;
         height: 2.25rem !important;
         min-height: 2.25rem !important;
         padding: 0 .5rem !important;
@@ -2565,13 +2650,13 @@ st.markdown(
     }
     .gc-code-intro-title {
         color: var(--gc-text) !important;
-        font-size: 1.12rem;
+        font-size: 1.232rem;
         font-weight: 720;
         margin: 0 0 .18rem;
     }
     .gc-code-intro-copy {
         color: var(--gc-muted) !important;
-        font-size: .84rem;
+        font-size: .924rem;
         line-height: 1.45;
         margin: 0;
     }
@@ -2579,7 +2664,7 @@ st.markdown(
     .gc-tool-kicker,
     .gc-coach-kicker {
         color: #93370d !important;
-        font-size: .68rem;
+        font-size: .748rem;
         font-weight: 780;
         letter-spacing: .09em;
         text-transform: uppercase;
@@ -2592,13 +2677,13 @@ st.markdown(
     }
     .gc-tool-title {
         color: #172033 !important;
-        font-size: 1rem;
+        font-size: 1.1rem;
         font-weight: 720;
         margin: .1rem 0 .16rem;
     }
     .gc-tool-copy {
         color: #526071 !important;
-        font-size: .8rem;
+        font-size: .88rem;
         line-height: 1.45;
         margin: 0;
     }
@@ -2610,7 +2695,7 @@ st.markdown(
     }
     .gc-plan-count {
         color: #344054 !important;
-        font-size: .75rem;
+        font-size: .825rem;
         font-weight: 700;
         white-space: nowrap;
     }
@@ -2634,14 +2719,14 @@ st.markdown(
     }
     .gc-coach-title {
         color: #172033 !important;
-        font-size: 1rem;
+        font-size: 1.1rem;
         font-weight: 730;
         margin: .12rem 0 0;
     }
     .gc-coach-body {
         background: #ffffff;
         color: #344054 !important;
-        font-size: .84rem;
+        font-size: .924rem;
         line-height: 1.5;
         padding: .78rem .82rem;
     }
@@ -2657,7 +2742,7 @@ st.markdown(
         border: 1px solid #e2e8f0;
         border-radius: 7px;
         font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
-        font-size: .75rem;
+        font-size: .825rem;
         margin-top: .55rem;
         overflow-wrap: anywhere;
         padding: .58rem .65rem;
@@ -2668,7 +2753,7 @@ st.markdown(
         border-radius: 999px;
         color: #05603a !important;
         display: inline-block;
-        font-size: .7rem;
+        font-size: .77rem;
         font-weight: 750;
         margin-top: .35rem;
         padding: .18rem .48rem;
@@ -2776,12 +2861,12 @@ st.markdown(
         fill: var(--gc-text) !important;
     }
     [data-testid="stMain"] h3 {
-        font-size: 1.2rem !important;
+        font-size: 1.32rem !important;
         font-weight: 700 !important;
         line-height: 1.25 !important;
     }
     [data-testid="stMain"] details[data-testid="stExpander"] summary p {
-        font-size: .95rem !important;
+        font-size: 1.045rem !important;
         font-weight: 600 !important;
         line-height: 1.25 !important;
     }
@@ -3091,9 +3176,24 @@ st.markdown(
         font-weight: 500;
     }
 
+    .gc-related-problem-row {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        min-width: 0;
+    }
+
+    .gc-related-problem-difficulty {
+        flex: 0 0 auto;
+        font-size: 0.792rem;
+        margin-top: 0;
+        padding: 0.16rem 0.46rem;
+    }
+
     .gc-related-problem-link {
         color: #2563eb !important;
-        font-size: 0.95rem;
+        font-size: 1.045rem;
         font-weight: 500;
         line-height: 1.35;
         text-decoration: none !important;
@@ -3134,7 +3234,64 @@ def initialize_state() -> None:
 initialize_state()
 
 
-def activate_problem(problem_id: str) -> None:
+def query_value(name: str) -> str | None:
+    """Return one normalized value from Streamlit's query parameters."""
+    value = st.query_params.get(name)
+
+    if isinstance(value, list):
+        value = value[-1] if value else None
+
+    if value is None:
+        return None
+
+    normalized = str(value).strip()
+    return normalized or None
+
+
+def route_parameters(
+    navigation: str,
+    problem_id: str | None = None,
+) -> dict[str, str]:
+    """Build the canonical URL parameters for one application view."""
+    route = NAVIGATION_TO_ROUTE.get(navigation, DEFAULT_ROUTE)
+    parameters = {"page": route}
+
+    if navigation == "Practice":
+        active_problem_id = (
+            problem_id
+            if problem_id in PROBLEM_BY_ID
+            else st.session_state.current_problem_id
+        )
+        parameters["problem"] = active_problem_id
+
+    return parameters
+
+
+def set_route(
+    navigation: str,
+    problem_id: str | None = None,
+) -> None:
+    """Update the address bar without discarding the active app state."""
+    desired = route_parameters(navigation, problem_id)
+    current = {
+        key: query_value(key)
+        for key in ("page", "problem")
+        if query_value(key) is not None
+    }
+
+    if current == desired:
+        return
+
+    # from_dict performs one atomic URL update. This avoids the temporary
+    # empty URL created by clear() followed by separate assignments.
+    st.query_params.from_dict(desired)
+
+
+def activate_problem(
+    problem_id: str,
+    *,
+    update_url: bool = True,
+) -> None:
     """
     Open a problem as a fresh Practice view.
 
@@ -3144,34 +3301,76 @@ def activate_problem(problem_id: str) -> None:
     if problem_id not in PROBLEM_BY_ID:
         return
 
+    problem_changed = (
+        problem_id != st.session_state.current_problem_id
+        or st.session_state.navigation != "Practice"
+    )
+
     st.session_state.current_problem_id = problem_id
     st.session_state[PROBLEM_PICKER_KEY] = PROBLEM_ID_TO_TITLE[
         problem_id
     ]
     st.session_state.navigation = "Practice"
 
-    st.session_state.problem_view_nonce = (
-        int(st.session_state.get("problem_view_nonce", 0)) + 1
-    )
+    if problem_changed:
+        st.session_state.problem_view_nonce = (
+            int(st.session_state.get("problem_view_nonce", 0)) + 1
+        )
+
+    if update_url:
+        set_route("Practice", problem_id)
 
 
-def load_problem_from_query_parameter() -> None:
-    requested_problem_id = st.query_params.get("problem")
+def load_route_from_query_parameters() -> None:
+    """Restore the exact page/problem encoded in the current URL."""
+    requested_route = query_value("page")
+    requested_problem_id = query_value("problem")
 
-    if not requested_problem_id:
+    # A valid problem parameter is itself an unambiguous Practice route.
+    # This also keeps old shared links such as ?problem=two-sum working.
+    if requested_problem_id in PROBLEM_BY_ID:
+        activate_problem(
+            requested_problem_id,
+            update_url=False,
+        )
+        set_route("Practice", requested_problem_id)
         return
 
-    if requested_problem_id not in PROBLEM_BY_ID:
-        st.query_params.clear()
+    requested_navigation = ROUTE_TO_NAVIGATION.get(requested_route)
+
+    if requested_navigation == "Practice":
+        fallback_problem_id = st.session_state.current_problem_id
+        if fallback_problem_id not in PROBLEM_BY_ID:
+            fallback_problem_id = PROBLEMS[0]["id"]
+
+        activate_problem(
+            fallback_problem_id,
+            update_url=False,
+        )
+        set_route("Practice", fallback_problem_id)
         return
 
-    activate_problem(requested_problem_id)
+    if requested_navigation is None:
+        requested_navigation = "Dashboard"
 
-    # Prevent the URL parameter from overriding later dropdown selections.
-    st.query_params.clear()
+    st.session_state.navigation = requested_navigation
+    set_route(requested_navigation)
 
 
-load_problem_from_query_parameter()
+load_route_from_query_parameters()
+
+
+def sync_navigation_to_url() -> None:
+    """Handle sidebar page changes and persist them in the address bar."""
+    navigation = st.session_state.navigation
+
+    if navigation == "Practice":
+        set_route(
+            navigation,
+            st.session_state.current_problem_id,
+        )
+    else:
+        set_route(navigation)
 
 
 def open_problem(problem_id: str) -> None:
@@ -3186,6 +3385,7 @@ def select_problem_from_picker() -> None:
         return
 
     if selected_id == st.session_state.current_problem_id:
+        set_route("Practice", selected_id)
         return
 
     activate_problem(selected_id)
@@ -3478,6 +3678,182 @@ def inline_code_html(text: str) -> str:
     )
 
 
+EXPLANATION_TOKEN_PATTERN = re.compile(
+    r"(`[^`]+`|\"(?:\\.|[^\"\\])*\"|"
+    r"(?<![A-Za-z0-9])'(?:\\.|[^'\\\n])*'(?![A-Za-z0-9])|"
+    r"\[[^\[\]\n]{1,180}\]|\{[^{}\n]{1,180}\}|"
+    r"(?<![A-Za-z_])-?\d+(?:\.\d+)?(?:st|nd|rd|th)?%?)"
+)
+
+
+def explanation_token_html(text: str) -> str:
+    """Style numbers and compact code-like literals inside explanations."""
+    rendered: list[str] = []
+    for token in EXPLANATION_TOKEN_PATTERN.split(text):
+        if not token:
+            continue
+
+        if token.startswith("`") and token.endswith("`"):
+            value = token[1:-1]
+            rendered.append(
+                f'<code class="gc-explanation-token">{escape(value)}</code>'
+            )
+        elif EXPLANATION_TOKEN_PATTERN.fullmatch(token):
+            rendered.append(
+                f'<code class="gc-explanation-token">{escape(token)}</code>'
+            )
+        else:
+            rendered.append(escape(token))
+
+    return "".join(rendered)
+
+
+def explanation_lines(text: str) -> list[tuple[str, bool]]:
+    """Recover readable lines from explanations flattened by imported data."""
+    normalized = re.sub(r"[ \t]+", " ", str(text).replace("\r\n", "\n")).strip()
+    if not normalized:
+        return []
+
+    # Restore common structures that source imports flattened into one paragraph.
+    normalized = re.sub(r"\s+(?=Step\s+\d+\s*:)", "\n", normalized, flags=re.I)
+    normalized = re.sub(
+        r"\s+(?=(?:First|Second|Third|Fourth|Fifth|Final)\s+operation\s*:)",
+        "\n",
+        normalized,
+        flags=re.I,
+    )
+    normalized = re.sub(
+        r"\s+(?=\d+(?:st|nd|rd|th)\s+day\s*:)",
+        "\n",
+        normalized,
+        flags=re.I,
+    )
+    normalized = re.sub(
+        r"\s+(?=\[[^\]\n]+\]\s*,\s*range\s*=)",
+        "\n",
+        normalized,
+        flags=re.I,
+    )
+    normalized = re.sub(
+        r"\s+(?=\[\s*-?\d+\s*,\s*-?\d+\s*\]\s*:)",
+        "\n",
+        normalized,
+    )
+    normalized = re.sub(r";\s+(?=[A-Za-z_][A-Za-z0-9_]*(?:\.|\s))", ";\n", normalized)
+    normalized = re.sub(
+        r"\s+(?=[A-Za-z_][A-Za-z0-9_]*\.[A-Za-z_][A-Za-z0-9_]*\()",
+        "\n",
+        normalized,
+    )
+    normalized = re.sub(r"\s+-\s+(?=[A-Z0-9\"'`])", "\n- ", normalized)
+    normalized = re.sub(r"\s+(?=The\s+power\s+of\s+-?\d+\s+is\s+)", "\n", normalized)
+    normalized = re.sub(
+        r"\s+(?=(?:First|Second|Third|Fourth|Fifth|Finally),\s+)",
+        "\n",
+        normalized,
+        flags=re.I,
+    )
+    normalized = re.sub(r"\s+then,\s+", "\nThen, ", normalized, flags=re.I)
+
+    # Put ordinary sentences on separate lines when a long explanation contains
+    # several independent steps. Short prose remains a normal wrapped line.
+    if len(normalized) > 135:
+        normalized = re.sub(
+            r"(?<=[.!?])\s+(?=[A-Z\"'`\[])",
+            "\n",
+            normalized,
+        )
+
+    lines: list[tuple[str, bool]] = []
+    for raw_line in normalized.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        is_bullet = line.startswith("- ")
+        if is_bullet:
+            line = line[2:].strip()
+        lines.append((line, is_bullet))
+
+    return lines
+
+
+def window_trace_html(example: dict[str, Any], explanation: str) -> str:
+    """Render flattened sliding-window traces as a real row-by-row table."""
+    if not re.search(r"\bWindow\s+position\b", explanation, flags=re.I):
+        return ""
+
+    nums_match = re.search(r"\bnums\s*=\s*(\[[^\]]*\])", str(example.get("input", "")))
+    k_match = re.search(r"\bk\s*=\s*(-?\d+)", str(example.get("input", "")))
+    if not nums_match or not k_match:
+        return ""
+
+    try:
+        nums = ast.literal_eval(nums_match.group(1))
+        k = int(k_match.group(1))
+        results = ast.literal_eval(str(example.get("output", "")))
+    except (SyntaxError, ValueError, TypeError):
+        return ""
+
+    if (
+        not isinstance(nums, list)
+        or not isinstance(results, list)
+        or k <= 0
+        or len(results) != max(0, len(nums) - k + 1)
+    ):
+        return ""
+
+    metric = "Median" if re.search(r"\bMedian\b", explanation, flags=re.I) else "Max"
+    rows = [
+        (
+            '<div class="gc-explanation-trace-row is-header">'
+            '<div>Window</div>'
+            f'<div class="gc-explanation-trace-result">{escape(metric)}</div>'
+            '</div>'
+        )
+    ]
+
+    for start, result in enumerate(results):
+        window = nums[start : start + k]
+        rows.append(
+            '<div class="gc-explanation-trace-row">'
+            '<div class="gc-explanation-trace-window">'
+            f'<code class="gc-explanation-token">{escape(str(window))}</code>'
+            '</div>'
+            '<div class="gc-explanation-trace-result">'
+            f'<code class="gc-explanation-token">{escape(str(result))}</code>'
+            '</div>'
+            '</div>'
+        )
+
+    return '<div class="gc-explanation-trace">' + "".join(rows) + "</div>"
+
+
+def example_explanation_html(example: dict[str, Any], explanation: str) -> str:
+    """Create readable, wrapping explanation markup for every problem."""
+    trace = window_trace_html(example, explanation)
+    if trace:
+        return trace
+
+    lines = explanation_lines(explanation)
+    if not lines:
+        return ""
+
+    return (
+        '<div class="gc-explanation-body">'
+        + "".join(
+            (
+                '<div class="gc-explanation-line'
+                + (" is-bullet" if is_bullet else "")
+                + '">'
+                + explanation_token_html(line)
+                + "</div>"
+            )
+            for line, is_bullet in lines
+        )
+        + "</div>"
+    )
+
+
 CONSTRAINT_TOKEN_PATTERN = re.compile(
     r"(`[^`]+`|O\([^)]*\)|-?\d[\d,]*(?:\.\d+)?%?|<=|>=|==|!=|<|>)"
 )
@@ -3628,13 +4004,29 @@ def render_topics_and_hints(
                         str(related_problem["title"])
                     )
 
+                    related_difficulty = escape(
+                        str(related_problem["difficulty"])
+                    )
+                    related_difficulty_class = escape(
+                        str(related_problem["difficulty"])
+                        .strip()
+                        .lower()
+                    )
+
                     related_links.append(
                         (
+                            '<div class="gc-related-problem-row">'
                             '<a class="gc-related-problem-link" '
-                            f'href="?problem={problem_id}" '
+                            f'href="?page=practice&amp;problem={problem_id}" '
                             'target="_self">'
                             f"{problem_title}"
                             "</a>"
+                            '<span class="gc-problem-difficulty '
+                            'gc-related-problem-difficulty '
+                            f'is-{related_difficulty_class}">'
+                            f"{related_difficulty}"
+                            "</span>"
+                            "</div>"
                         )
                     )
 
@@ -3706,7 +4098,7 @@ def render_examples(problem: dict[str, Any]) -> None:
                     </div>{visual_markup}
                     <section class="gc-explanation" aria-label="Example {index} explanation">
                         <div class="gc-io-label">Explanation</div>
-                        <p>{inline_code_html(explanation)}</p>
+                        {example_explanation_html(example, explanation)}
                     </section>
                 </div>
             </article>
@@ -3985,6 +4377,7 @@ def render_guided_reasoning(username: str, problem: dict[str, Any]) -> None:
 
 
 LEETCODE_EDITOR_CSS = """
+.ace_editor,
 .ace-streamlit-light,
 .ace-streamlit-light.ace_editor {
     background: #ffffff !important;
@@ -3992,66 +4385,72 @@ LEETCODE_EDITOR_CSS = """
     font-family: Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
     line-height: 20px !important;
 }
-.ace-streamlit-light .ace_gutter {
+.ace_editor .ace_gutter {
     background: #f7f7f7 !important;
     border-right: 1px solid #e5e7eb !important;
     color: #858585 !important;
 }
-.ace-streamlit-light .ace_gutter-active-line {
+.ace_editor .ace_gutter-active-line {
     background: #ededed !important;
     color: #333333 !important;
 }
-.ace-streamlit-light .ace_marker-layer .ace_active-line {
+.ace_editor .ace_marker-layer .ace_active-line {
     background: #f5f5f5 !important;
 }
-.ace-streamlit-light .ace_marker-layer .ace_selection {
+.ace_editor .ace_marker-layer .ace_selection {
     background: #add6ff !important;
 }
-.ace-streamlit-light .ace_marker-layer .ace_selected-word {
+.ace_editor .ace_marker-layer .ace_selected-word {
     background: transparent !important;
     border: 1px solid #add6ff !important;
 }
-.ace-streamlit-light .ace_cursor {
+.ace_editor .ace_cursor {
     color: #000000 !important;
 }
-.ace-streamlit-light .ace_storage,
-.ace-streamlit-light .ace_storage.ace_type,
-.ace-streamlit-light .ace_keyword {
+/* Long source lines use Ace soft wrapping. Hide the horizontal scrollbar so
+   the editor always stays within the available workspace width. */
+.ace_editor .ace_scrollbar-h {
+    display: none !important;
+    height: 0 !important;
+}
+.ace_editor .ace_storage,
+.ace_editor .ace_storage.ace_type,
+.ace_editor .ace_keyword {
     color: #0000ff !important;
 }
-.ace-streamlit-light .ace_keyword.ace_operator,
-.ace-streamlit-light .ace_punctuation,
-.ace-streamlit-light .ace_paren {
+.ace_editor .ace_keyword.ace_operator,
+.ace_editor .ace_punctuation,
+.ace_editor .ace_paren {
     color: #1f2328 !important;
 }
-.ace-streamlit-light .ace_string,
-.ace-streamlit-light .ace_string.ace_regexp {
+.ace_editor .ace_string,
+.ace_editor .ace_string.ace_regexp {
     color: #a31515 !important;
 }
-.ace-streamlit-light .ace_comment {
+.ace_editor .ace_comment {
     color: #008000 !important;
     font-style: normal !important;
 }
-.ace-streamlit-light .ace_constant.ace_numeric {
+.ace_editor .ace_constant.ace_numeric {
     color: #098658 !important;
 }
-.ace-streamlit-light .ace_constant.ace_language,
-.ace-streamlit-light .ace_support.ace_constant {
+.ace_editor .ace_constant.ace_language,
+.ace_editor .ace_support.ace_constant {
     color: #0000ff !important;
 }
-.ace-streamlit-light .ace_entity.ace_name.ace_function,
-.ace-streamlit-light .ace_support.ace_function {
+.ace_editor .ace_entity.ace_name.ace_function,
+.ace_editor .ace_support.ace_function {
     color: #795e26 !important;
 }
-.ace-streamlit-light .ace_support.ace_class,
-.ace-streamlit-light .ace_support.ace_type {
+.ace_editor .ace_support.ace_class,
+.ace_editor .ace_support.ace_type {
     color: #267f99 !important;
 }
-.ace-streamlit-light .ace_variable,
-.ace-streamlit-light .ace_variable.ace_parameter {
+.ace_editor .ace_variable,
+.ace_editor .ace_variable.ace_parameter {
     color: #001080 !important;
 }
-.ace-streamlit-light .ace_indent-guide {
+.ace_editor .ace_indent-guide {
     position: relative !important;
     display: inline-block !important;
     height: 100% !important;
@@ -4060,7 +4459,7 @@ LEETCODE_EDITOR_CSS = """
     overflow: visible !important;
     background: none !important;
 }
-.ace-streamlit-light .ace_indent-guide::after {
+.ace_editor .ace_indent-guide::after {
     content: "";
     position: absolute;
     top: -1px;
@@ -4070,8 +4469,47 @@ LEETCODE_EDITOR_CSS = """
     background: rgba(148, 163, 184, 0.45);
     pointer-events: none;
 }
-.ace-streamlit-light .ace_indent-guide-active::after {
+.ace_editor .ace_indent-guide-active::after {
     background: rgba(71, 85, 105, 0.72);
+}
+/* Cross-language token palette. Ace assigns these semantic classes for
+   Python, JavaScript, Java, C, C++, C#, and Go modes. */
+.ace_editor .ace_meta,
+.ace_editor .ace_meta.ace_tag,
+.ace_editor .ace_meta.ace_preprocessor {
+    color: #AF00DB !important;
+}
+.ace_editor .ace_entity.ace_name.ace_tag,
+.ace_editor .ace_entity.ace_other.ace_attribute-name {
+    color: #800000 !important;
+}
+.ace_editor .ace_entity.ace_name.ace_type,
+.ace_editor .ace_entity.ace_name.ace_class,
+.ace_editor .ace_storage.ace_type,
+.ace_editor .ace_support.ace_type,
+.ace_editor .ace_support.ace_class {
+    color: #267F99 !important;
+}
+.ace_editor .ace_entity.ace_name.ace_function,
+.ace_editor .ace_support.ace_function,
+.ace_editor .ace_meta.ace_function-call {
+    color: #795E26 !important;
+}
+.ace_editor .ace_variable.ace_language,
+.ace_editor .ace_variable.ace_instance,
+.ace_editor .ace_variable.ace_other,
+.ace_editor .ace_variable.ace_parameter {
+    color: #001080 !important;
+}
+.ace_editor .ace_constant,
+.ace_editor .ace_constant.ace_numeric,
+.ace_editor .ace_constant.ace_language,
+.ace_editor .ace_support.ace_constant {
+    color: #098658 !important;
+}
+.ace_editor .ace_invalid {
+    color: #ffffff !important;
+    background: #e51400 !important;
 }
 """
 
@@ -4448,7 +4886,7 @@ def render_workspace_resizer(username: str, force_expand: bool = False) -> None:
                 align-items: center;
                 color: #344054;
                 display: flex;
-                font: 700 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                font: 700 13.2px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
                 gap: 8px;
                 pointer-events: none;
             }
@@ -4473,7 +4911,7 @@ def render_workspace_resizer(username: str, force_expand: bool = False) -> None:
                 color: #475467;
                 cursor: pointer;
                 display: flex;
-                font: 700 16px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+                font: 700 17.6px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
                 height: 22px;
                 justify-content: center;
                 padding: 0;
@@ -4915,6 +5353,7 @@ def render_code_workspace(
     username: str,
     problem: dict[str, Any],
     language_id: str,
+    editor_font_size: int,
 ) -> None:
     language = LANGUAGE_BY_ID[language_id]
     state_suffix = f"{username}::{problem['id']}::{language_id}"
@@ -4962,7 +5401,7 @@ def render_code_workspace(
         # which recreated the editor and made the cursor/text flicker.
         response_mode="blur",
         options={
-            "fontSize": 14,
+            "fontSize": editor_font_size,
             "tabSize": 4,
             "useSoftTabs": True,
             "navigateWithinSoftTabs": True,
@@ -4970,7 +5409,11 @@ def render_code_workspace(
             "showGutter": True,
             "showLineNumbers": True,
             "fixedWidthGutter": True,
-            "wrap": False,
+            # Wrap long lines at the visible editor width instead of creating
+            # a horizontal scroll area.
+            "wrap": True,
+            "indentedSoftWrap": False,
+            "hScrollBarAlwaysVisible": False,
             "displayIndentGuides": True,
             "cursorStyle": "line",
             "enableBasicAutocompletion": True,
@@ -5146,6 +5589,7 @@ with st.sidebar:
         "Navigation",
         ["Dashboard", "Practice", "Problem Library"],
         key="navigation",
+        on_change=sync_navigation_to_url,
         label_visibility="collapsed",
     )
     if st.session_state.navigation == "Practice":
@@ -5468,8 +5912,10 @@ else:
         language_key = f"language::{username}::{problem['id']}"
         if st.session_state.get(language_key) not in LANGUAGE_BY_ID:
             st.session_state[language_key] = "python"
-        code_bar_title, code_bar_language = st.columns(
-            [4.5, 1.2],
+        font_size_key = f"editor_font_size::{username}"
+        st.session_state.setdefault(font_size_key, 16)
+        code_bar_title, code_bar_font_size, code_bar_language = st.columns(
+            [4.15, 0.7, 1.2],
             gap=None,
             vertical_alignment="center",
         )
@@ -5482,6 +5928,14 @@ else:
                 """,
                 unsafe_allow_html=True,
             )
+        with code_bar_font_size:
+            editor_font_size = st.selectbox(
+                "Editor font size",
+                options=[12, 14, 16, 18, 20, 22, 24],
+                key=font_size_key,
+                format_func=lambda size: f"{size}px",
+                label_visibility="collapsed",
+            )
         with code_bar_language:
             language_id = st.selectbox(
                 "Coding language",
@@ -5490,4 +5944,9 @@ else:
                 key=language_key,
                 label_visibility="collapsed",
             )
-        render_code_workspace(username, problem, language_id)
+        render_code_workspace(
+            username,
+            problem,
+            language_id,
+            editor_font_size,
+        )

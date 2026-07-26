@@ -93,6 +93,12 @@ PROBLEM_VISUALS: dict[str, dict[str, Any]] = {
         "annotations": {1: "B → A", 3: "B → A"},
         "caption": "Replacing both B characters makes all four positions equal.",
     },
+    "leetcode-42-trapping-rain-water": {
+        "kind": "rain_water",
+        "label": "The first example elevation map with trapped water levels shown at each index",
+        "values": [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1],
+        "caption": "Each blue segment shows trapped water above a bar, and each dashed blue top edge marks the water level at that index. Together they sum to 6 units.",
+    },
     "daily-temperatures": {
         "kind": "bars",
         "label": "The temperatures from example one with one four-day wait marked",
@@ -430,6 +436,95 @@ def _container(spec: dict[str, Any]) -> str:
         f'{"".join(bars)}'
         '<div class="gc-vis-water-baseline"></div>'
         "</div>"
+    )
+
+
+def _rain_water(spec: dict[str, Any]) -> str:
+    values = [int(value) for value in spec["values"]]
+    if not values:
+        return '<div class="gc-vis-empty">No bars to display.</div>'
+
+    left_max: list[int] = []
+    running = 0
+    for value in values:
+        running = max(running, value)
+        left_max.append(running)
+
+    right_max = [0] * len(values)
+    running = 0
+    for index in range(len(values) - 1, -1, -1):
+        running = max(running, values[index])
+        right_max[index] = running
+
+    water_levels = [min(left_max[i], right_max[i]) for i in range(len(values))]
+    trapped = [max(0, water_levels[i] - values[i]) for i in range(len(values))]
+    maximum = max(max(water_levels), max(values), 1)
+    total = sum(trapped)
+
+    columns: list[str] = []
+    for index, height in enumerate(values):
+        water_level = water_levels[index]
+        trapped_here = trapped[index]
+        bar_height = max(10, round(height / maximum * 112)) if height > 0 else 0
+        water_height = round(trapped_here / maximum * 112)
+        level_height = round(water_level / maximum * 112)
+        level_label = f'<div style="color:#2d6fd2;font-size:.72rem;font-weight:700;line-height:1;">{water_level}</div>' if trapped_here > 0 else '<div style="height:.72rem;"></div>'
+        trapped_label = (
+            f'<div style="color:#245bb5;font-size:.72rem;font-weight:700;line-height:1;">+{trapped_here}</div>'
+            if trapped_here > 0
+            else '<div style="height:.72rem;"></div>'
+        )
+        water_fill = (
+            f'<div style="position:absolute;left:0;right:0;bottom:{bar_height}px;height:{water_height}px;'
+            'background:linear-gradient(180deg, rgba(116,181,255,.42), rgba(70,137,214,.26));'
+            'border-top:2px dashed #4689d6;border-radius:.42rem .42rem 0 0;box-sizing:border-box;z-index:2;"></div>'
+            if trapped_here > 0
+            else ''
+        )
+        level_line = (
+            f'<div style="position:absolute;left:0;right:0;bottom:{level_height}px;border-top:2px dashed rgba(70,137,214,.9);z-index:3;"></div>'
+            if trapped_here > 0
+            else ''
+        )
+        bar = (
+            f'<div style="position:absolute;left:0;right:0;bottom:0;height:{bar_height}px;'
+            'background:linear-gradient(180deg, #46556b 0%, #2f4059 100%);'
+            'border-radius:.45rem .45rem 0 0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);z-index:4;"></div>'
+            if height > 0
+            else ''
+        )
+        columns.append(
+            '<div style="display:flex;flex-direction:column;align-items:center;gap:.18rem;min-width:2.35rem;flex:1 1 0;">'
+            f'{level_label}{trapped_label}'
+            '<div style="position:relative;width:100%;height:122px;display:flex;align-items:flex-end;justify-content:center;">'
+            '<div style="position:absolute;left:0;right:0;bottom:0;border-top:2px solid #9aa6b2;"></div>'
+            f'{water_fill}{level_line}{bar}'
+            '</div>'
+            f'<div style="color:#344054;font-size:.8rem;font-weight:700;line-height:1;">{height}</div>'
+            f'<div style="color:#667085;font-size:.73rem;line-height:1;">i={index}</div>'
+            '</div>'
+        )
+
+    legend = (
+        '<div style="display:flex;flex-wrap:wrap;gap:.75rem;justify-content:center;margin-top:.85rem;'
+        'color:#526071;font-size:.8rem;">'
+        '<span style="display:inline-flex;align-items:center;gap:.35rem;">'
+        '<i style="width:1rem;height:.72rem;background:linear-gradient(180deg,#46556b 0%,#2f4059 100%);'
+        'border-radius:.24rem;display:inline-block;"></i>bar height</span>'
+        '<span style="display:inline-flex;align-items:center;gap:.35rem;">'
+        '<i style="width:1rem;height:.72rem;background:rgba(70,137,214,.26);border-top:2px dashed #4689d6;'
+        'border-radius:.24rem  .24rem 0 0;display:inline-block;"></i>trapped water</span>'
+        '<span style="display:inline-flex;align-items:center;gap:.35rem;">'
+        '<i style="width:1rem;height:0;border-top:2px dashed #4689d6;display:inline-block;"></i>water level</span>'
+        f'<span style="font-weight:700;color:#245bb5;">total = {total}</span>'
+        '</div>'
+    )
+
+    return (
+        '<div style="display:flex;flex-direction:column;gap:.2rem;">'
+        '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:.5rem;'
+        'padding:.35rem .1rem 0;overflow-x:auto;">'
+        f'{"".join(columns)}</div>{legend}</div>'
     )
 
 
@@ -4301,6 +4396,7 @@ RENDERERS = {
     "rectangles": _rectangles,
     "clock": _clock,
     "paired_bars": _paired_bars,
+    "rain_water": _rain_water,
     "books": _books,
     "trips": _trips,
     "buildings": _buildings,
